@@ -46,6 +46,10 @@
     --bead-peach: 25 85% 75%;
     --bead-sage: 140 30% 65%;
 
+    --explore-active: 150 55% 50%;
+    --explore-easy: 150 55% 50%;
+    --explore-medium: 40 90% 55%;
+    --explore-hard: 0 70% 55%;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 340 82% 65%;
