@@ -61,6 +61,12 @@ export default {
           peach: "hsl(var(--bead-peach))",
           sage: "hsl(var(--bead-sage))",
         },
+        explore: {
+          active: "hsl(var(--explore-active))",
+          easy: "hsl(var(--explore-easy))",
+          medium: "hsl(var(--explore-medium))",
+          hard: "hsl(var(--explore-hard))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
