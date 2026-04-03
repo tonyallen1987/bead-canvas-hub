@@ -1,7 +1,8 @@
-import { Link, useLocation } from "react-router-dom";
-import { Compass, PenTool, Grid3X3, Calculator, Menu, X } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Compass, PenTool, Grid3X3, Calculator, Menu, X, LogIn, LogOut, User } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { label: "Explore", to: "/explore", icon: Compass },
@@ -12,7 +13,14 @@ const navItems = [
 
 export default function Header() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b">
@@ -46,6 +54,28 @@ export default function Header() {
               </Link>
             );
           })}
+
+          {user ? (
+            <div className="flex items-center gap-2 ml-2">
+              <span className="w-8 h-8 rounded-full bg-bead-lavender flex items-center justify-center">
+                <User size={14} className="text-foreground" />
+              </span>
+              <button
+                onClick={handleSignOut}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/auth"
+              className="flex items-center gap-1.5 px-4 py-2 ml-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
+            >
+              <LogIn size={16} />
+              Sign In
+            </Link>
+          )}
         </nav>
 
         <button className="md:hidden p-2 rounded-lg hover:bg-muted" onClick={() => setOpen(!open)}>
@@ -74,6 +104,24 @@ export default function Header() {
               </Link>
             );
           })}
+          {user ? (
+            <button
+              onClick={() => { handleSignOut(); setOpen(false); }}
+              className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted mt-1 w-full"
+            >
+              <LogOut size={18} />
+              Sign Out
+            </button>
+          ) : (
+            <Link
+              to="/auth"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-4 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold mt-1"
+            >
+              <LogIn size={18} />
+              Sign In
+            </Link>
+          )}
         </nav>
       )}
     </header>
