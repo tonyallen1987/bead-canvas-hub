@@ -46,6 +46,7 @@ const App = () => (
             <Route path="/counter" element={<Counter />} />
             <Route path="/pattern/:slug" element={<PatternDetail />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/admin-import" element={<AdminImport />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
