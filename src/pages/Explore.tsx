@@ -153,7 +153,7 @@ export default function Explore() {
             return (
               <Link
                 key={pattern.id}
-                to={`/pattern/${pattern.id}`}
+                to={`/pattern/${pattern.slug || pattern.id}`}
                 className="break-inside-avoid bg-card rounded-2xl border overflow-hidden hover:shadow-lg transition-shadow block"
               >
                 <div className="p-4 flex justify-center bg-muted/30">
