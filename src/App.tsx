@@ -15,6 +15,7 @@ import Counter from "./pages/Counter";
 import Auth from "./pages/Auth";
 import PatternDetail from "./pages/PatternDetail";
 import NotFound from "./pages/NotFound";
+import AdminImport from "./pages/AdminImport";
 
 const queryClient = new QueryClient();
 
