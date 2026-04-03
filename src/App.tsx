@@ -11,6 +11,7 @@ import Designer from "./pages/Designer";
 import Patterns from "./pages/Patterns";
 import Counter from "./pages/Counter";
 import Auth from "./pages/Auth";
+import PatternDetail from "./pages/PatternDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
