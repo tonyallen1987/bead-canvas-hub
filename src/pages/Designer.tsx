@@ -67,6 +67,18 @@ export default function Designer() {
   const clearGrid = () =>
     setGrid(Array.from({ length: size }, () => Array(size).fill(EMPTY)));
 
+  const handleImageImport = (importedGrid: string[][], rows: number, cols: number) => {
+    setSize(Math.max(rows, cols));
+    // Pad to square grid
+    const maxDim = Math.max(rows, cols);
+    const padded = Array.from({ length: maxDim }, (_, r) =>
+      Array.from({ length: maxDim }, (_, c) =>
+        r < rows && c < cols ? importedGrid[r][c] : EMPTY
+      )
+    );
+    setGrid(padded);
+  };
+
   const exportPNG = () => {
     const scale = 20;
     const canvas = document.createElement("canvas");
