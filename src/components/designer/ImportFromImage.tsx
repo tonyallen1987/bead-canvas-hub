@@ -180,6 +180,7 @@ export default function ImportFromImage({ onImport }: ImportFromImageProps) {
   const handleImport = () => {
     if (processedGrid && imgDims) {
       onImport(processedGrid, imgDims.rows, imgDims.cols);
+      trackGeneratePattern("image_import", Math.max(imgDims.rows, imgDims.cols));
       setOpen(false);
       setPreview(null);
       setProcessedGrid(null);
