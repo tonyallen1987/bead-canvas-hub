@@ -6,23 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-
-const PALETTE = [
-  { name: "Black", hex: "#1a1a1a" },
-  { name: "White", hex: "#F5F5F0" },
-  { name: "Red", hex: "#E84040" },
-  { name: "Pink", hex: "#E8708A" },
-  { name: "Coral", hex: "#E88570" },
-  { name: "Orange", hex: "#E8A040" },
-  { name: "Lemon", hex: "#E8D060" },
-  { name: "Mint", hex: "#6BC5A0" },
-  { name: "Sage", hex: "#88B890" },
-  { name: "Sky", hex: "#60B5E8" },
-  { name: "Blue", hex: "#4080E8" },
-  { name: "Lavender", hex: "#A580D0" },
-  { name: "Peach", hex: "#E8B895" },
-  { name: "Gray", hex: "#A0A0A0" },
-];
+import { COLOR_GROUPS } from "@/data/perlerColors";
 
 const EMPTY = "transparent";
 const DEFAULT_SIZE = 16;
@@ -32,17 +16,18 @@ export default function Designer() {
   const [grid, setGrid] = useState<string[][]>(() =>
     Array.from({ length: DEFAULT_SIZE }, () => Array(DEFAULT_SIZE).fill(EMPTY))
   );
-  const [color, setColor] = useState(PALETTE[0].hex);
+  const [color, setColor] = useState(COLOR_GROUPS[0].colors[0].hex);
   const [isEraser, setIsEraser] = useState(false);
   const [painting, setPainting] = useState(false);
   const [title, setTitle] = useState("");
   const [saving, setSaving] = useState(false);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(COLOR_GROUPS[0].label);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const resizeGrid = (newSize: number) => {
-    const clamped = Math.max(4, Math.min(32, newSize));
+    const clamped = Math.max(4, Math.min(48, newSize));
     setSize(clamped);
     setGrid(
       Array.from({ length: clamped }, (_, r) =>
@@ -69,7 +54,6 @@ export default function Designer() {
 
   const handleImageImport = (importedGrid: string[][], rows: number, cols: number) => {
     setSize(Math.max(rows, cols));
-    // Pad to square grid
     const maxDim = Math.max(rows, cols);
     const padded = Array.from({ length: maxDim }, (_, r) =>
       Array.from({ length: maxDim }, (_, c) =>
@@ -85,7 +69,7 @@ export default function Designer() {
     canvas.width = size * scale;
     canvas.height = size * scale;
     const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#F5F5F0";
+    ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     grid.forEach((row, r) =>
       row.forEach((cell, c) => {
@@ -164,7 +148,7 @@ export default function Designer() {
           </div>
         </div>
 
-        <div className="lg:w-64 space-y-5">
+        <div className="lg:w-72 space-y-5">
           <div>
             <label className="text-sm font-semibold mb-2 block">Grid Size: {size} × {size}</label>
             <div className="flex items-center gap-2">
@@ -172,7 +156,7 @@ export default function Designer() {
                 <Minus size={16} />
               </button>
               <div className="flex-1 h-2 bg-muted rounded-full relative">
-                <div className="absolute h-full bg-primary rounded-full" style={{ width: `${((size - 4) / 28) * 100}%` }} />
+                <div className="absolute h-full bg-primary rounded-full" style={{ width: `${((size - 4) / 44) * 100}%` }} />
               </div>
               <button onClick={() => resizeGrid(size + 2)} className="p-2 rounded-lg border hover:bg-muted">
                 <Plus size={16} />
@@ -180,21 +164,47 @@ export default function Designer() {
             </div>
           </div>
 
+          {/* Grouped Palette */}
           <div>
             <label className="text-sm font-semibold mb-2 block">Palette</label>
-            <div className="grid grid-cols-7 gap-1.5">
-              {PALETTE.map((p) => (
-                <button
-                  key={p.hex}
-                  title={p.name}
-                  onClick={() => { setColor(p.hex); setIsEraser(false); }}
-                  className={cn(
-                    "w-8 h-8 rounded-lg bead-dot transition-transform hover:scale-110",
-                    color === p.hex && !isEraser && "ring-2 ring-foreground ring-offset-2 scale-110"
-                  )}
-                  style={{ backgroundColor: p.hex }}
-                />
-              ))}
+            <div className="space-y-1 max-h-[280px] overflow-y-auto pr-1">
+              {COLOR_GROUPS.map((group) => {
+                const isOpen = expandedGroup === group.label;
+                return (
+                  <div key={group.label} className="border rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => setExpandedGroup(isOpen ? null : group.label)}
+                      className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-semibold hover:bg-muted/50 transition-colors"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <span className="flex gap-0.5">
+                          {group.colors.slice(0, 4).map((c) => (
+                            <span key={c.id} className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: c.hex }} />
+                          ))}
+                        </span>
+                        {group.label}
+                      </span>
+                      <span className="text-muted-foreground">{isOpen ? "−" : "+"}</span>
+                    </button>
+                    {isOpen && (
+                      <div className="grid grid-cols-8 gap-1 p-2 pt-0">
+                        {group.colors.map((p) => (
+                          <button
+                            key={p.id}
+                            title={p.name}
+                            onClick={() => { setColor(p.hex); setIsEraser(false); }}
+                            className={cn(
+                              "w-7 h-7 rounded-lg bead-dot transition-transform hover:scale-110",
+                              color === p.hex && !isEraser && "ring-2 ring-foreground ring-offset-1 scale-110"
+                            )}
+                            style={{ backgroundColor: p.hex }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -225,7 +235,6 @@ export default function Designer() {
             <Download size={16} /> Export PNG
           </button>
 
-          {/* Save section */}
           <div className="border-t pt-4 space-y-3">
             <input
               type="text"
