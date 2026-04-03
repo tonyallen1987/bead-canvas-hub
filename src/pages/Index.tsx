@@ -5,29 +5,29 @@ import BeadDecoration from "@/components/BeadDecoration";
 const features = [
   {
     icon: Compass,
-    title: "探索作品",
-    desc: "发现社区中令人惊叹的拼豆创作",
+    title: "Explore",
+    desc: "Discover amazing Perler bead creations from the community",
     to: "/explore",
     color: "bg-bead-sky",
   },
   {
     icon: PenTool,
-    title: "在线编辑器",
-    desc: "在浏览器中绘制你的拼豆图纸",
+    title: "Pattern Designer",
+    desc: "Draw your own bead patterns right in the browser",
     to: "/designer",
     color: "bg-bead-pink",
   },
   {
     icon: Grid3X3,
-    title: "图纸库",
-    desc: "浏览和下载分类整理的精美图纸",
+    title: "Pattern Library",
+    desc: "Browse and download curated patterns by category",
     to: "/patterns",
     color: "bg-bead-mint",
   },
   {
     icon: Calculator,
-    title: "豆子计算器",
-    desc: "精确估算所需的颜色和数量",
+    title: "Bead Counter",
+    desc: "Estimate the colors and quantities you need",
     to: "/counter",
     color: "bg-bead-lemon",
   },
@@ -40,7 +40,6 @@ export default function Index() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 grid-pattern opacity-40" />
         <div className="container relative py-20 md:py-32 flex flex-col items-center text-center gap-6">
-          {/* Pixel art hero decoration */}
           <div className="grid grid-cols-7 gap-1 mb-2">
             {[
               "", "", "bg-bead-pink", "bg-bead-pink", "bg-bead-pink", "", "",
@@ -60,12 +59,12 @@ export default function Index() {
           </div>
 
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">
-            你的拼豆创作
+            Your Perler Bead Journey
             <br />
-            <span className="text-primary">从这里开始</span>
+            <span className="text-primary">Starts Here</span>
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl max-w-lg">
-            设计、分享、探索——Perlerly 是拼豆爱好者的一站式在线社区
+            Design, share, and explore — Perlerly is the all-in-one community for Perler bead enthusiasts
           </p>
 
           <div className="flex gap-3 mt-2">
@@ -73,13 +72,13 @@ export default function Index() {
               to="/designer"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:opacity-90 transition-opacity"
             >
-              开始创作 <ArrowRight size={16} />
+              Start Creating <ArrowRight size={16} />
             </Link>
             <Link
               to="/explore"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-border font-bold text-sm hover:bg-muted transition-colors"
             >
-              浏览作品
+              Browse Works
             </Link>
           </div>
 
@@ -110,11 +109,10 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="border-t py-8">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">perlerly.com</span>
-          <span>© 2026 Perlerly. 为拼豆爱好者而生。</span>
+          <span>© 2026 Perlerly. Made for bead lovers.</span>
         </div>
       </footer>
     </div>

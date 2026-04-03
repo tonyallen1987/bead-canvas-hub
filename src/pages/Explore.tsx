@@ -8,7 +8,6 @@ interface Work {
   author: string;
   likes: number;
   comments: number;
-  colors: string[];
   rows: number;
   cols: number;
 }
@@ -29,14 +28,14 @@ function generatePixelArt(rows: number, cols: number): string[][] {
 }
 
 const sampleWorks: (Work & { grid: string[][] })[] = [
-  { id: 1, title: "像素小狐狸", author: "BeadMaster", likes: 234, comments: 18, colors: ["#E88570", "#E8D060"], rows: 12, cols: 12 },
-  { id: 2, title: "樱花树", author: "PixelArt酱", likes: 189, comments: 12, colors: ["#E8708A", "#88B890"], rows: 16, cols: 10 },
-  { id: 3, title: "游戏手柄", author: "RetroFan", likes: 312, comments: 25, colors: ["#333333", "#E84040"], rows: 10, cols: 14 },
-  { id: 4, title: "彩虹独角兽", author: "ColorDream", likes: 456, comments: 32, colors: ["#A580D0", "#E8708A"], rows: 14, cols: 12 },
-  { id: 5, title: "星空夜景", author: "NightOwl", likes: 178, comments: 9, colors: ["#4080E8", "#E8D060"], rows: 12, cols: 16 },
-  { id: 6, title: "可爱猫咪", author: "MeowPixel", likes: 567, comments: 45, colors: ["#E8B895", "#333333"], rows: 14, cols: 14 },
-  { id: 7, title: "马里奥蘑菇", author: "GameLover", likes: 423, comments: 28, colors: ["#E84040", "#F5F5F0"], rows: 10, cols: 10 },
-  { id: 8, title: "海洋世界", author: "OceanBlue", likes: 201, comments: 15, colors: ["#60B5E8", "#6BC5A0"], rows: 16, cols: 12 },
+  { id: 1, title: "Pixel Fox", author: "BeadMaster", likes: 234, comments: 18, rows: 12, cols: 12 },
+  { id: 2, title: "Cherry Blossoms", author: "PixelArtFan", likes: 189, comments: 12, rows: 16, cols: 10 },
+  { id: 3, title: "Game Controller", author: "RetroFan", likes: 312, comments: 25, rows: 10, cols: 14 },
+  { id: 4, title: "Rainbow Unicorn", author: "ColorDream", likes: 456, comments: 32, rows: 14, cols: 12 },
+  { id: 5, title: "Starry Night", author: "NightOwl", likes: 178, comments: 9, rows: 12, cols: 16 },
+  { id: 6, title: "Cute Kitty", author: "MeowPixel", likes: 567, comments: 45, rows: 14, cols: 14 },
+  { id: 7, title: "Mario Mushroom", author: "GameLover", likes: 423, comments: 28, rows: 10, cols: 10 },
+  { id: 8, title: "Ocean World", author: "OceanBlue", likes: 201, comments: 15, rows: 16, cols: 12 },
 ].map((w) => ({ ...w, grid: generatePixelArt(w.rows, w.cols) }));
 
 export default function Explore() {
@@ -54,19 +53,17 @@ export default function Explore() {
     <div className="container py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold">探索作品</h1>
-          <p className="text-muted-foreground mt-1">发现社区中精彩的拼豆创作</p>
+          <h1 className="text-3xl font-extrabold">Explore</h1>
+          <p className="text-muted-foreground mt-1">Discover amazing Perler bead creations from the community</p>
         </div>
       </div>
 
-      {/* Masonry-ish grid */}
       <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
         {sampleWorks.map((work) => (
           <div
             key={work.id}
             className="break-inside-avoid bg-card rounded-2xl border overflow-hidden hover:shadow-lg transition-shadow group"
           >
-            {/* Pixel art preview */}
             <div className="p-4 flex justify-center bg-muted/30">
               <div
                 className="grid gap-px"
