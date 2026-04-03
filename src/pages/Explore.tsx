@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 interface PatternRow {
   id: string;
   title: string;
+  slug: string | null;
   grid_data: string[][];
   grid_rows: number;
   grid_cols: number;
@@ -37,7 +38,7 @@ export default function Explore() {
   const loadPatterns = async () => {
     const { data } = await supabase
       .from("perler_patterns")
-      .select("id, title, grid_data, grid_rows, grid_cols, created_at, profiles(username, display_name)")
+      .select("id, title, slug, grid_data, grid_rows, grid_cols, created_at, profiles(username, display_name)")
       .eq("is_public", true)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -152,7 +153,7 @@ export default function Explore() {
             return (
               <Link
                 key={pattern.id}
-                to={`/pattern/${pattern.id}`}
+                to={`/pattern/${pattern.slug || pattern.id}`}
                 className="break-inside-avoid bg-card rounded-2xl border overflow-hidden hover:shadow-lg transition-shadow block"
               >
                 <div className="p-4 flex justify-center bg-muted/30">
