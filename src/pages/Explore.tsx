@@ -1,5 +1,5 @@
-import { Heart, Bookmark, TrendingUp, Clock } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Heart, Bookmark, TrendingUp, Clock, Circle, User } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,10 +13,40 @@ interface PatternRow {
   grid_rows: number;
   grid_cols: number;
   created_at: string;
-  profiles: { username: string | null; display_name: string | null } | null;
+  profiles: { username: string | null; display_name: string | null; avatar_url: string | null } | null;
 }
 
 type SortMode = "recent" | "liked";
+
+function getBeadCount(grid: string[][]): number {
+  return grid.flat().filter((c) => c && c !== "transparent").length;
+}
+
+function getDifficulty(beadCount: number, cols: number): { label: string; color: string } {
+  const total = beadCount;
+  if (total <= 150 || cols <= 12) return { label: "Easy", color: "bg-explore-easy text-white" };
+  if (total <= 500 || cols <= 24) return { label: "Medium", color: "bg-explore-medium text-white" };
+  return { label: "Hard", color: "bg-explore-hard text-white" };
+}
+
+function SkeletonCard() {
+  return (
+    <div className="break-inside-avoid mb-4 bg-card rounded-xl border border-border/60 overflow-hidden animate-pulse">
+      <div className="bg-muted/50 w-full" style={{ paddingBottom: `${60 + Math.random() * 40}%` }} />
+      <div className="p-4 space-y-3">
+        <div className="h-4 bg-muted rounded-md w-3/4" />
+        <div className="flex gap-2">
+          <div className="h-5 bg-muted rounded-full w-16" />
+          <div className="h-5 bg-muted rounded-full w-12" />
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-muted" />
+          <div className="h-3 bg-muted rounded-md w-20" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Explore() {
   const [patterns, setPatterns] = useState<PatternRow[]>([]);
@@ -38,7 +68,7 @@ export default function Explore() {
   const loadPatterns = async () => {
     const { data } = await supabase
       .from("perler_patterns")
-      .select("id, title, slug, grid_data, grid_rows, grid_cols, created_at, profiles(username, display_name)")
+      .select("id, title, slug, grid_data, grid_rows, grid_cols, created_at, profiles(username, display_name, avatar_url)")
       .eq("is_public", true)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -102,106 +132,166 @@ export default function Explore() {
     }
   };
 
-  const sortedPatterns = [...patterns].sort((a, b) => {
-    if (sort === "liked") return (likeCounts[b.id] || 0) - (likeCounts[a.id] || 0);
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
-
-  if (loading) {
-    return <div className="container py-20 text-center text-muted-foreground">Loading...</div>;
-  }
+  const sortedPatterns = useMemo(() => {
+    return [...patterns].sort((a, b) => {
+      if (sort === "liked") return (likeCounts[b.id] || 0) - (likeCounts[a.id] || 0);
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [patterns, sort, likeCounts]);
 
   return (
-    <div className="container py-8">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-extrabold">Explore</h1>
-          <p className="text-muted-foreground mt-1">Discover amazing Perler bead creations from the community</p>
+    <div className="min-h-screen grid-pattern">
+      <div className="container py-10">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+          <div>
+            <h1 className="text-4xl font-extrabold tracking-tight">Explore</h1>
+            <p className="text-muted-foreground mt-1.5 text-base">Discover bead creations from the community</p>
+          </div>
+          <div className="flex gap-1.5 bg-card border rounded-xl p-1">
+            <button
+              onClick={() => setSort("recent")}
+              className={cn(
+                "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all",
+                sort === "recent" ? "bg-explore-active text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Clock size={14} /> Recent
+            </button>
+            <button
+              onClick={() => setSort("liked")}
+              className={cn(
+                "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all",
+                sort === "liked" ? "bg-explore-active text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <TrendingUp size={14} /> Popular
+            </button>
+          </div>
         </div>
-        <div className="flex gap-1.5">
-          <button
-            onClick={() => setSort("recent")}
-            className={cn(
-              "flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-colors",
-              sort === "recent" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Clock size={14} /> Recent
-          </button>
-          <button
-            onClick={() => setSort("liked")}
-            className={cn(
-              "flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-colors",
-              sort === "liked" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <TrendingUp size={14} /> Most Liked
-          </button>
-        </div>
+
+        {/* Skeleton loading */}
+        {loading && (
+          <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && sortedPatterns.length === 0 && (
+          <div className="text-center py-24 text-muted-foreground">
+            <Circle size={48} className="mx-auto mb-4 opacity-30" />
+            <p className="text-lg font-semibold">No patterns shared yet</p>
+            <p className="text-sm mt-1">Be the first to share a creation!</p>
+          </div>
+        )}
+
+        {/* Masonry grid */}
+        {!loading && sortedPatterns.length > 0 && (
+          <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
+            {sortedPatterns.map((pattern) => {
+              const grid = pattern.grid_data as unknown as string[][];
+              const authorName = pattern.profiles?.display_name || pattern.profiles?.username || "Anonymous";
+              const avatarUrl = (pattern.profiles as any)?.avatar_url;
+              const beadCount = getBeadCount(grid);
+              const difficulty = getDifficulty(beadCount, pattern.grid_cols);
+              const isLiked = liked.has(pattern.id);
+              const isBookmarked = bookmarked.has(pattern.id);
+
+              return (
+                <Link
+                  key={pattern.id}
+                  to={`/pattern/${pattern.slug || pattern.id}`}
+                  className="break-inside-avoid mb-4 block group"
+                >
+                  <div className="bg-card rounded-xl border border-border/60 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_-12px_hsl(var(--explore-active)/0.25)]">
+                    {/* Image area with hover overlay */}
+                    <div className="relative bg-muted/30 p-4 flex justify-center">
+                      <div
+                        className="grid gap-px w-full"
+                        style={{
+                          gridTemplateColumns: `repeat(${pattern.grid_cols}, 1fr)`,
+                          maxWidth: 300,
+                          aspectRatio: `${pattern.grid_cols}/${pattern.grid_rows}`,
+                        }}
+                      >
+                        {grid.flat().map((color, i) => (
+                          <span
+                            key={i}
+                            className="rounded-[1px]"
+                            style={{ backgroundColor: color === "transparent" ? "transparent" : color }}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Hover action overlay */}
+                      <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/5 transition-colors duration-300 flex items-start justify-end p-3 gap-2 opacity-0 group-hover:opacity-100">
+                        <button
+                          onClick={(e) => toggleLike(e, pattern.id)}
+                          className={cn(
+                            "w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm transition-all shadow-sm",
+                            isLiked
+                              ? "bg-explore-active text-white"
+                              : "bg-card/90 text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
+                        </button>
+                        <button
+                          onClick={(e) => toggleBookmark(e, pattern.id)}
+                          className={cn(
+                            "w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm transition-all shadow-sm",
+                            isBookmarked
+                              ? "bg-explore-active text-white"
+                              : "bg-card/90 text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          <Bookmark size={16} fill={isBookmarked ? "currentColor" : "none"} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Card content */}
+                    <div className="p-4 space-y-3">
+                      <h3 className="font-bold text-foreground leading-snug">{pattern.title}</h3>
+
+                      {/* Stats & difficulty */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-semibold text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
+                          {beadCount.toLocaleString()} beads
+                        </span>
+                        <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full", difficulty.color)}>
+                          {difficulty.label}
+                        </span>
+                        {(likeCounts[pattern.id] || 0) > 0 && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1 ml-auto">
+                            <Heart size={12} className="text-explore-active" fill="currentColor" />
+                            {likeCounts[pattern.id]}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Creator */}
+                      <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+                        {avatarUrl ? (
+                          <img src={avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
+                        ) : (
+                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                            <User size={12} className="text-muted-foreground" />
+                          </span>
+                        )}
+                        <span className="text-xs text-muted-foreground font-medium truncate">@{authorName}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
-
-      {sortedPatterns.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <p className="text-lg font-semibold">No patterns shared yet</p>
-          <p className="text-sm mt-1">Be the first to share a creation!</p>
-        </div>
-      ) : (
-        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
-          {sortedPatterns.map((pattern) => {
-            const grid = pattern.grid_data as unknown as string[][];
-            const authorName = pattern.profiles?.display_name || pattern.profiles?.username || "Anonymous";
-            return (
-              <Link
-                key={pattern.id}
-                to={`/pattern/${pattern.slug || pattern.id}`}
-                className="break-inside-avoid bg-card rounded-2xl border overflow-hidden hover:shadow-lg transition-shadow block"
-              >
-                <div className="p-4 flex justify-center bg-muted/30">
-                  <div
-                    className="grid gap-px"
-                    style={{
-                      gridTemplateColumns: `repeat(${pattern.grid_cols}, 1fr)`,
-                      width: "100%",
-                      maxWidth: 280,
-                      aspectRatio: `${pattern.grid_cols}/${pattern.grid_rows}`,
-                    }}
-                  >
-                    {grid.flat().map((color, i) => (
-                      <span
-                        key={i}
-                        className="rounded-[1px]"
-                        style={{ backgroundColor: color === "transparent" ? "transparent" : color }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="p-4">
-                  <h3 className="font-bold">{pattern.title}</h3>
-                  <p className="text-sm text-muted-foreground">@{authorName}</p>
-                  <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
-                    <button
-                      onClick={(e) => toggleLike(e, pattern.id)}
-                      className={cn("flex items-center gap-1 transition-colors", liked.has(pattern.id) && "text-primary")}
-                    >
-                      <Heart size={16} fill={liked.has(pattern.id) ? "currentColor" : "none"} />
-                      {likeCounts[pattern.id] || 0}
-                    </button>
-                    <Bookmark
-                      size={16}
-                      className={cn(
-                        "ml-auto cursor-pointer transition-colors",
-                        bookmarked.has(pattern.id) ? "text-primary fill-primary" : "hover:text-foreground"
-                      )}
-                      onClick={(e) => toggleBookmark(e, pattern.id)}
-                    />
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
