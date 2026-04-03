@@ -38,7 +38,7 @@ export default function Explore() {
   const loadPatterns = async () => {
     const { data } = await supabase
       .from("perler_patterns")
-      .select("id, title, grid_data, grid_rows, grid_cols, created_at, profiles(username, display_name)")
+      .select("id, title, slug, grid_data, grid_rows, grid_cols, created_at, profiles(username, display_name)")
       .eq("is_public", true)
       .order("created_at", { ascending: false })
       .limit(50);
