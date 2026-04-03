@@ -14,7 +14,146 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      pattern_bookmarks: {
+        Row: {
+          created_at: string
+          pattern_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          pattern_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          pattern_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pattern_bookmarks_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "perler_patterns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pattern_bookmarks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pattern_likes: {
+        Row: {
+          created_at: string
+          pattern_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          pattern_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          pattern_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pattern_likes_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "perler_patterns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pattern_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      perler_patterns: {
+        Row: {
+          created_at: string
+          description: string | null
+          grid_cols: number
+          grid_data: Json
+          grid_rows: number
+          id: string
+          is_public: boolean
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          grid_cols?: number
+          grid_data: Json
+          grid_rows?: number
+          id?: string
+          is_public?: boolean
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          grid_cols?: number
+          grid_data?: Json
+          grid_rows?: number
+          id?: string
+          is_public?: boolean
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perler_patterns_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
