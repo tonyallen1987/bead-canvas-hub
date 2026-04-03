@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { Eraser, Download, Trash2, Plus, Minus, Save, Share2 } from "lucide-react";
+import ImportFromImage from "@/components/designer/ImportFromImage";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
