@@ -82,40 +82,58 @@ export type Database = {
       }
       perler_patterns: {
         Row: {
+          bead_count: number | null
+          category: string | null
+          color_palette: Json | null
           created_at: string
           description: string | null
+          difficulty: string | null
           grid_cols: number
           grid_data: Json
           grid_rows: number
           id: string
+          is_featured: boolean
           is_public: boolean
           slug: string | null
+          thumbnail_url: string | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          bead_count?: number | null
+          category?: string | null
+          color_palette?: Json | null
           created_at?: string
           description?: string | null
+          difficulty?: string | null
           grid_cols?: number
           grid_data: Json
           grid_rows?: number
           id?: string
+          is_featured?: boolean
           is_public?: boolean
           slug?: string | null
+          thumbnail_url?: string | null
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          bead_count?: number | null
+          category?: string | null
+          color_palette?: Json | null
           created_at?: string
           description?: string | null
+          difficulty?: string | null
           grid_cols?: number
           grid_data?: Json
           grid_rows?: number
           id?: string
+          is_featured?: boolean
           is_public?: boolean
           slug?: string | null
+          thumbnail_url?: string | null
           title?: string
           updated_at?: string
           user_id?: string
