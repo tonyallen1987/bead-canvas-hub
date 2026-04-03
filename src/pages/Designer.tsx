@@ -1,6 +1,10 @@
 import { useState, useCallback } from "react";
-import { Eraser, Download, Trash2, Plus, Minus } from "lucide-react";
+import { Eraser, Download, Trash2, Plus, Minus, Save, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const PALETTE = [
   { name: "Black", hex: "#1a1a1a" },
@@ -30,6 +34,11 @@ export default function Designer() {
   const [color, setColor] = useState(PALETTE[0].hex);
   const [isEraser, setIsEraser] = useState(false);
   const [painting, setPainting] = useState(false);
+  const [title, setTitle] = useState("");
+  const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const resizeGrid = (newSize: number) => {
     const clamped = Math.max(4, Math.min(32, newSize));
@@ -79,6 +88,32 @@ export default function Designer() {
     a.click();
   };
 
+  const savePattern = async (isPublic: boolean) => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    if (!title.trim()) {
+      toast({ title: "Please enter a title", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.from("perler_patterns").insert({
+      user_id: user.id,
+      title: title.trim(),
+      grid_data: grid,
+      grid_rows: size,
+      grid_cols: size,
+      is_public: isPublic,
+    });
+    setSaving(false);
+    if (error) {
+      toast({ title: "Error saving pattern", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: isPublic ? "Pattern shared!" : "Pattern saved!" });
+    }
+  };
+
   const cellSize = Math.min(Math.floor(560 / size), 40);
 
   return (
@@ -106,16 +141,10 @@ export default function Designer() {
                     cell === EMPTY && "bg-card border border-border/50"
                   )}
                   style={cell !== EMPTY ? { backgroundColor: cell } : undefined}
-                  onMouseDown={() => {
-                    setPainting(true);
-                    paint(r, c);
-                  }}
+                  onMouseDown={() => { setPainting(true); paint(r, c); }}
                   onMouseUp={() => setPainting(false)}
                   onMouseEnter={() => painting && paint(r, c)}
-                  onTouchStart={(e) => {
-                    e.preventDefault();
-                    paint(r, c);
-                  }}
+                  onTouchStart={(e) => { e.preventDefault(); paint(r, c); }}
                 />
               ))
             )}
@@ -124,9 +153,7 @@ export default function Designer() {
 
         <div className="lg:w-64 space-y-5">
           <div>
-            <label className="text-sm font-semibold mb-2 block">
-              Grid Size: {size} × {size}
-            </label>
+            <label className="text-sm font-semibold mb-2 block">Grid Size: {size} × {size}</label>
             <div className="flex items-center gap-2">
               <button onClick={() => resizeGrid(size - 2)} className="p-2 rounded-lg border hover:bg-muted">
                 <Minus size={16} />
@@ -178,10 +205,40 @@ export default function Designer() {
 
           <button
             onClick={exportPNG}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:opacity-90 transition-opacity"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-border font-bold text-sm hover:bg-muted transition-colors"
           >
             <Download size={16} /> Export PNG
           </button>
+
+          {/* Save section */}
+          <div className="border-t pt-4 space-y-3">
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Pattern title..."
+              className="w-full px-3 py-2.5 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => savePattern(false)}
+                disabled={saving}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border text-sm font-semibold hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                <Save size={14} /> Save
+              </button>
+              <button
+                onClick={() => savePattern(true)}
+                disabled={saving}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                <Share2 size={14} /> Share
+              </button>
+            </div>
+            {!user && (
+              <p className="text-xs text-muted-foreground text-center">Sign in to save your patterns</p>
+            )}
+          </div>
         </div>
       </div>
     </div>

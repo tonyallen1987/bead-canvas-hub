@@ -1,112 +1,171 @@
 import { Heart, MessageCircle, Bookmark } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
-interface Work {
-  id: number;
+interface PatternRow {
+  id: string;
   title: string;
-  author: string;
-  likes: number;
-  comments: number;
-  rows: number;
-  cols: number;
+  grid_data: string[][];
+  grid_rows: number;
+  grid_cols: number;
+  created_at: string;
+  profiles: { username: string | null; display_name: string | null } | null;
 }
-
-const beadColors = [
-  "#E8708A", "#E88570", "#6BC5A0", "#60B5E8",
-  "#A580D0", "#E8D060", "#E8B895", "#88B890",
-  "#F5F5F0", "#333333", "#E84040", "#4080E8",
-];
-
-function generatePixelArt(rows: number, cols: number): string[][] {
-  const palette = beadColors.slice(0, 4 + Math.floor(Math.random() * 4));
-  return Array.from({ length: rows }, () =>
-    Array.from({ length: cols }, () =>
-      Math.random() > 0.15 ? palette[Math.floor(Math.random() * palette.length)] : "transparent"
-    )
-  );
-}
-
-const sampleWorks: (Work & { grid: string[][] })[] = [
-  { id: 1, title: "Pixel Fox", author: "BeadMaster", likes: 234, comments: 18, rows: 12, cols: 12 },
-  { id: 2, title: "Cherry Blossoms", author: "PixelArtFan", likes: 189, comments: 12, rows: 16, cols: 10 },
-  { id: 3, title: "Game Controller", author: "RetroFan", likes: 312, comments: 25, rows: 10, cols: 14 },
-  { id: 4, title: "Rainbow Unicorn", author: "ColorDream", likes: 456, comments: 32, rows: 14, cols: 12 },
-  { id: 5, title: "Starry Night", author: "NightOwl", likes: 178, comments: 9, rows: 12, cols: 16 },
-  { id: 6, title: "Cute Kitty", author: "MeowPixel", likes: 567, comments: 45, rows: 14, cols: 14 },
-  { id: 7, title: "Mario Mushroom", author: "GameLover", likes: 423, comments: 28, rows: 10, cols: 10 },
-  { id: 8, title: "Ocean World", author: "OceanBlue", likes: 201, comments: 15, rows: 16, cols: 12 },
-].map((w) => ({ ...w, grid: generatePixelArt(w.rows, w.cols) }));
 
 export default function Explore() {
-  const [liked, setLiked] = useState<Set<number>>(new Set());
+  const [patterns, setPatterns] = useState<PatternRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [liked, setLiked] = useState<Set<string>>(new Set());
+  const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const { user } = useAuth();
 
-  const toggleLike = (id: number) => {
-    setLiked((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+  useEffect(() => {
+    loadPatterns();
+  }, []);
+
+  useEffect(() => {
+    if (user && patterns.length > 0) loadUserInteractions();
+  }, [user, patterns]);
+
+  const loadPatterns = async () => {
+    const { data } = await supabase
+      .from("perler_patterns")
+      .select("id, title, grid_data, grid_rows, grid_cols, created_at, profiles(username, display_name)")
+      .eq("is_public", true)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (data) {
+      setPatterns(data as unknown as PatternRow[]);
+      // Load like counts
+      const ids = data.map((p) => p.id);
+      const { data: likes } = await supabase
+        .from("pattern_likes")
+        .select("pattern_id")
+        .in("pattern_id", ids);
+      if (likes) {
+        const counts: Record<string, number> = {};
+        likes.forEach((l) => { counts[l.pattern_id] = (counts[l.pattern_id] || 0) + 1; });
+        setLikeCounts(counts);
+      }
+    }
+    setLoading(false);
   };
+
+  const loadUserInteractions = async () => {
+    if (!user) return;
+    const ids = patterns.map((p) => p.id);
+    const [likesRes, bookmarksRes] = await Promise.all([
+      supabase.from("pattern_likes").select("pattern_id").eq("user_id", user.id).in("pattern_id", ids),
+      supabase.from("pattern_bookmarks").select("pattern_id").eq("user_id", user.id).in("pattern_id", ids),
+    ]);
+    if (likesRes.data) setLiked(new Set(likesRes.data.map((l) => l.pattern_id)));
+    if (bookmarksRes.data) setBookmarked(new Set(bookmarksRes.data.map((b) => b.pattern_id)));
+  };
+
+  const toggleLike = async (patternId: string) => {
+    if (!user) return;
+    const isLiked = liked.has(patternId);
+    if (isLiked) {
+      await supabase.from("pattern_likes").delete().eq("user_id", user.id).eq("pattern_id", patternId);
+      setLiked((prev) => { const n = new Set(prev); n.delete(patternId); return n; });
+      setLikeCounts((prev) => ({ ...prev, [patternId]: (prev[patternId] || 1) - 1 }));
+    } else {
+      await supabase.from("pattern_likes").insert({ user_id: user.id, pattern_id: patternId });
+      setLiked((prev) => new Set(prev).add(patternId));
+      setLikeCounts((prev) => ({ ...prev, [patternId]: (prev[patternId] || 0) + 1 }));
+    }
+  };
+
+  const toggleBookmark = async (patternId: string) => {
+    if (!user) return;
+    const isBookmarked = bookmarked.has(patternId);
+    if (isBookmarked) {
+      await supabase.from("pattern_bookmarks").delete().eq("user_id", user.id).eq("pattern_id", patternId);
+      setBookmarked((prev) => { const n = new Set(prev); n.delete(patternId); return n; });
+    } else {
+      await supabase.from("pattern_bookmarks").insert({ user_id: user.id, pattern_id: patternId });
+      setBookmarked((prev) => new Set(prev).add(patternId));
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container py-20 text-center text-muted-foreground">Loading...</div>
+    );
+  }
 
   return (
     <div className="container py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-extrabold">Explore</h1>
-          <p className="text-muted-foreground mt-1">Discover amazing Perler bead creations from the community</p>
+      <div className="mb-8">
+        <h1 className="text-3xl font-extrabold">Explore</h1>
+        <p className="text-muted-foreground mt-1">Discover amazing Perler bead creations from the community</p>
+      </div>
+
+      {patterns.length === 0 ? (
+        <div className="text-center py-20 text-muted-foreground">
+          <p className="text-lg font-semibold">No patterns shared yet</p>
+          <p className="text-sm mt-1">Be the first to share a creation!</p>
         </div>
-      </div>
-
-      <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
-        {sampleWorks.map((work) => (
-          <div
-            key={work.id}
-            className="break-inside-avoid bg-card rounded-2xl border overflow-hidden hover:shadow-lg transition-shadow group"
-          >
-            <div className="p-4 flex justify-center bg-muted/30">
+      ) : (
+        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
+          {patterns.map((pattern) => {
+            const grid = pattern.grid_data as unknown as string[][];
+            const authorName = pattern.profiles?.display_name || pattern.profiles?.username || "Anonymous";
+            return (
               <div
-                className="grid gap-px"
-                style={{
-                  gridTemplateColumns: `repeat(${work.cols}, 1fr)`,
-                  width: "100%",
-                  maxWidth: 280,
-                  aspectRatio: `${work.cols}/${work.rows}`,
-                }}
+                key={pattern.id}
+                className="break-inside-avoid bg-card rounded-2xl border overflow-hidden hover:shadow-lg transition-shadow"
               >
-                {work.grid.flat().map((color, i) => (
-                  <span
-                    key={i}
-                    className="rounded-[1px]"
-                    style={{ backgroundColor: color === "transparent" ? "transparent" : color }}
-                  />
-                ))}
-              </div>
-            </div>
+                <div className="p-4 flex justify-center bg-muted/30">
+                  <div
+                    className="grid gap-px"
+                    style={{
+                      gridTemplateColumns: `repeat(${pattern.grid_cols}, 1fr)`,
+                      width: "100%",
+                      maxWidth: 280,
+                      aspectRatio: `${pattern.grid_cols}/${pattern.grid_rows}`,
+                    }}
+                  >
+                    {grid.flat().map((color, i) => (
+                      <span
+                        key={i}
+                        className="rounded-[1px]"
+                        style={{ backgroundColor: color === "transparent" ? "transparent" : color }}
+                      />
+                    ))}
+                  </div>
+                </div>
 
-            <div className="p-4">
-              <h3 className="font-bold">{work.title}</h3>
-              <p className="text-sm text-muted-foreground">@{work.author}</p>
-              <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
-                <button
-                  onClick={() => toggleLike(work.id)}
-                  className={cn(
-                    "flex items-center gap-1 transition-colors",
-                    liked.has(work.id) && "text-primary"
-                  )}
-                >
-                  <Heart size={16} fill={liked.has(work.id) ? "currentColor" : "none"} />
-                  {work.likes + (liked.has(work.id) ? 1 : 0)}
-                </button>
-                <span className="flex items-center gap-1">
-                  <MessageCircle size={16} /> {work.comments}
-                </span>
-                <Bookmark size={16} className="ml-auto cursor-pointer hover:text-foreground transition-colors" />
+                <div className="p-4">
+                  <h3 className="font-bold">{pattern.title}</h3>
+                  <p className="text-sm text-muted-foreground">@{authorName}</p>
+                  <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
+                    <button
+                      onClick={() => toggleLike(pattern.id)}
+                      className={cn("flex items-center gap-1 transition-colors", liked.has(pattern.id) && "text-primary")}
+                    >
+                      <Heart size={16} fill={liked.has(pattern.id) ? "currentColor" : "none"} />
+                      {likeCounts[pattern.id] || 0}
+                    </button>
+                    <Bookmark
+                      size={16}
+                      className={cn(
+                        "ml-auto cursor-pointer transition-colors",
+                        bookmarked.has(pattern.id) ? "text-primary fill-primary" : "hover:text-foreground"
+                      )}
+                      onClick={() => toggleBookmark(pattern.id)}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
