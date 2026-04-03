@@ -216,6 +216,8 @@ export default function Designer() {
             </button>
           </div>
 
+          <ImportFromImage onImport={handleImageImport} />
+
           <button
             onClick={exportPNG}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-border font-bold text-sm hover:bg-muted transition-colors"
