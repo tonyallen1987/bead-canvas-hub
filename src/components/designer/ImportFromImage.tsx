@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { trackGeneratePattern } from "@/lib/analytics";
 
 // Extended Perler bead palette with RGB values for color matching
 const PERLER_COLORS = [
@@ -179,6 +180,7 @@ export default function ImportFromImage({ onImport }: ImportFromImageProps) {
   const handleImport = () => {
     if (processedGrid && imgDims) {
       onImport(processedGrid, imgDims.rows, imgDims.cols);
+      trackGeneratePattern("image_import", Math.max(imgDims.rows, imgDims.cols));
       setOpen(false);
       setPreview(null);
       setProcessedGrid(null);
