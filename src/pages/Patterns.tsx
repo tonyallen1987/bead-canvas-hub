@@ -1,113 +1,205 @@
-import { useState } from "react";
-import { Search, Download, Grid3X3 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { Search, Clock, Palette, Sparkles, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  libraryPatterns,
+  categories,
+  difficulties,
+  type Category,
+  type Difficulty,
+} from "@/data/libraryPatterns";
 
-const categories = ["All", "Animals", "Games", "Food", "Flowers", "Holiday", "Letters"];
+const difficultyColor: Record<Difficulty, string> = {
+  Easy: "bg-explore-easy text-white",
+  Medium: "bg-explore-medium text-white",
+  Advanced: "bg-explore-hard text-white",
+};
 
-const beadColors = ["#E8708A", "#E88570", "#6BC5A0", "#60B5E8", "#A580D0", "#E8D060", "#E8B895", "#1a1a1a", "#F5F5F0"];
+const categoryColor: Record<Exclude<Category, "All">, string> = {
+  Gaming: "bg-bead-sky/15 text-bead-sky",
+  Animals: "bg-bead-coral/15 text-bead-coral",
+  Nature: "bg-bead-mint/15 text-bead-mint",
+  Holidays: "bg-bead-lavender/15 text-bead-lavender",
+  "Starter Kits": "bg-bead-lemon/15 text-accent-foreground",
+};
 
-function makeGrid(rows: number, cols: number, seed: number): string[][] {
-  const pal = beadColors.slice(seed % 3, (seed % 3) + 4);
-  return Array.from({ length: rows }, (_, r) =>
-    Array.from({ length: cols }, (_, c) => {
-      const v = (r * 7 + c * 13 + seed) % 10;
-      return v < 2 ? "transparent" : pal[v % pal.length];
-    })
+function SkeletonCard() {
+  return (
+    <div className="bg-card rounded-xl border border-border/60 overflow-hidden animate-pulse">
+      <div className="bg-muted/50 w-full" style={{ paddingBottom: "80%" }} />
+      <div className="p-4 space-y-3">
+        <div className="h-4 bg-muted rounded-md w-3/4" />
+        <div className="flex gap-2">
+          <div className="h-5 bg-muted rounded-full w-14" />
+          <div className="h-5 bg-muted rounded-full w-16" />
+        </div>
+        <div className="h-3 bg-muted rounded-md w-1/2" />
+      </div>
+    </div>
   );
 }
 
-const patterns = [
-  { id: 1, title: "Shiba Inu", cat: "Animals", size: "12×12", downloads: 1234, rows: 12, cols: 12 },
-  { id: 2, title: "Mario", cat: "Games", size: "16×16", downloads: 2345, rows: 16, cols: 16 },
-  { id: 3, title: "Strawberry Cake", cat: "Food", size: "10×10", downloads: 987, rows: 10, cols: 10 },
-  { id: 4, title: "Sunflower", cat: "Flowers", size: "14×14", downloads: 876, rows: 14, cols: 14 },
-  { id: 5, title: "Christmas Tree", cat: "Holiday", size: "12×16", downloads: 1567, rows: 16, cols: 12 },
-  { id: 6, title: "Letters A-Z", cat: "Letters", size: "8×8", downloads: 3210, rows: 8, cols: 8 },
-  { id: 7, title: "Little Penguin", cat: "Animals", size: "12×12", downloads: 1100, rows: 12, cols: 12 },
-  { id: 8, title: "Pikachu", cat: "Games", size: "16×16", downloads: 4567, rows: 16, cols: 16 },
-  { id: 9, title: "Sushi Platter", cat: "Food", size: "14×10", downloads: 789, rows: 10, cols: 14 },
-].map((p) => ({ ...p, grid: makeGrid(p.rows, p.cols, p.id * 37) }));
-
 export default function Patterns() {
-  const [cat, setCat] = useState("All");
+  const [activeCat, setActiveCat] = useState<Category>("All");
+  const [activeDiff, setActiveDiff] = useState<Difficulty | "All">("All");
   const [search, setSearch] = useState("");
 
-  const filtered = patterns.filter(
-    (p) =>
-      (cat === "All" || p.cat === cat) &&
-      p.title.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = useMemo(() => {
+    return libraryPatterns.filter((p) => {
+      if (activeCat !== "All" && p.category !== activeCat) return false;
+      if (activeDiff !== "All" && p.difficulty !== activeDiff) return false;
+      if (search && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    });
+  }, [activeCat, activeDiff, search]);
 
   return (
-    <div className="container py-8">
-      <h1 className="text-3xl font-extrabold mb-2">Pattern Library</h1>
-      <p className="text-muted-foreground mb-6">Browse and download curated Perler bead patterns</p>
-
-      <div className="flex flex-col sm:flex-row gap-4 mb-8">
-        <div className="relative flex-1 max-w-sm">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search patterns..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
+    <div className="min-h-screen grid-pattern">
+      <div className="container py-10">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-extrabold tracking-tight">Pattern Library</h1>
+          <p className="text-muted-foreground mt-1.5 text-base">
+            Browse curated bead patterns by category &amp; difficulty
+          </p>
         </div>
-        <div className="flex gap-1.5 flex-wrap">
-          {categories.map((c) => (
+
+        {/* Filters bar */}
+        <div className="flex flex-col gap-4 mb-8">
+          {/* Search */}
+          <div className="relative max-w-sm">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search patterns…"
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-explore-active/40"
+            />
+          </div>
+
+          {/* Category chips */}
+          <div className="flex flex-wrap gap-1.5">
+            {categories.map((c) => (
+              <button
+                key={c}
+                onClick={() => setActiveCat(c)}
+                className={cn(
+                  "px-4 py-2 rounded-lg text-sm font-semibold transition-all",
+                  activeCat === c
+                    ? "bg-explore-active text-white shadow-sm"
+                    : "bg-card border text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+
+          {/* Difficulty chips */}
+          <div className="flex gap-1.5">
             <button
-              key={c}
-              onClick={() => setCat(c)}
+              onClick={() => setActiveDiff("All")}
               className={cn(
-                "px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-colors",
-                cat === c
-                  ? "bg-primary text-primary-foreground"
+                "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all",
+                activeDiff === "All"
+                  ? "bg-foreground text-background shadow-sm"
                   : "bg-muted text-muted-foreground hover:text-foreground"
               )}
             >
-              {c}
+              Any Difficulty
             </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((p) => (
-          <div key={p.id} className="bg-card rounded-2xl border overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="p-4 flex justify-center bg-muted/30">
-              <div
-                className="grid gap-px"
-                style={{
-                  gridTemplateColumns: `repeat(${p.cols}, 1fr)`,
-                  width: "100%",
-                  maxWidth: 200,
-                  aspectRatio: `${p.cols}/${p.rows}`,
-                }}
+            {difficulties.map((d) => (
+              <button
+                key={d}
+                onClick={() => setActiveDiff(d)}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all",
+                  activeDiff === d
+                    ? difficultyColor[d] + " shadow-sm"
+                    : "bg-muted text-muted-foreground hover:text-foreground"
+                )}
               >
-                {p.grid.flat().map((color, i) => (
-                  <span
-                    key={i}
-                    className="rounded-[1px]"
-                    style={{ backgroundColor: color === "transparent" ? "transparent" : color }}
-                  />
-                ))}
-              </div>
-            </div>
-            <div className="p-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold">{p.title}</h3>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
-                  <Grid3X3 size={14} /> {p.size}
-                  <span>·</span>
-                  <Download size={14} /> {p.downloads}
-                </div>
-              </div>
-              <button className="p-2.5 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
-                <Download size={16} />
+                {d}
               </button>
-            </div>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {/* Empty state */}
+        {filtered.length === 0 && (
+          <div className="text-center py-24 text-muted-foreground">
+            <Sparkles size={48} className="mx-auto mb-4 opacity-30" />
+            <p className="text-lg font-semibold">No patterns here yet</p>
+            <p className="text-sm mt-1 mb-4">Be the first to create one!</p>
+            <Link
+              to="/designer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-explore-active text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+            >
+              Open Designer <ArrowRight size={14} />
+            </Link>
+          </div>
+        )}
+
+        {/* Pattern grid */}
+        {filtered.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filtered.map((pattern) => (
+              <Link
+                key={pattern.id}
+                to="/designer"
+                className="group block"
+              >
+                <div className="bg-card rounded-xl border border-border/60 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_-12px_hsl(var(--explore-active)/0.25)]">
+                  {/* Preview */}
+                  <div className="relative bg-muted/30 p-4 flex justify-center">
+                    <div
+                      className="grid gap-px w-full"
+                      style={{
+                        gridTemplateColumns: `repeat(${pattern.grid_cols}, 1fr)`,
+                        maxWidth: 220,
+                        aspectRatio: `${pattern.grid_cols}/${pattern.grid_rows}`,
+                      }}
+                    >
+                      {pattern.grid_data.flat().map((color, i) => (
+                        <span
+                          key={i}
+                          className="rounded-[1px]"
+                          style={{ backgroundColor: color === "transparent" ? "transparent" : color }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Card body */}
+                  <div className="p-4 space-y-2.5">
+                    <h3 className="font-bold text-foreground leading-snug">{pattern.title}</h3>
+
+                    {/* Tags row */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide", categoryColor[pattern.category as Exclude<Category, "All">])}>
+                        {pattern.category}
+                      </span>
+                      <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", difficultyColor[pattern.difficulty])}>
+                        {pattern.difficulty}
+                      </span>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Palette size={12} /> {pattern.bead_count} beads
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock size={12} /> ~{pattern.estimated_minutes} min
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
