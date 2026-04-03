@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Heart, Bookmark, ArrowLeft, Calculator } from "lucide-react";
+import { Heart, Bookmark, ArrowLeft, Calculator, Download, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ const PALETTE = [
 interface PatternData {
   id: string;
   title: string;
+  slug: string | null;
   description: string | null;
   grid_data: string[][];
   grid_rows: number;
@@ -34,8 +35,43 @@ interface PatternData {
   profiles: { username: string | null; display_name: string | null } | null;
 }
 
+function generatePatternCanvas(grid: string[][], rows: number, cols: number, withWatermark: boolean): HTMLCanvasElement {
+  const scale = 20;
+  const padding = withWatermark ? 40 : 0;
+  const canvas = document.createElement("canvas");
+  canvas.width = cols * scale;
+  canvas.height = rows * scale + padding;
+  const ctx = canvas.getContext("2d")!;
+
+  // Background
+  ctx.fillStyle = "#F5F5F0";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Grid
+  grid.forEach((row, r) =>
+    row.forEach((cell, c) => {
+      if (cell !== "transparent") {
+        ctx.fillStyle = cell;
+        ctx.beginPath();
+        ctx.arc(c * scale + scale / 2, r * scale + scale / 2, scale / 2 - 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    })
+  );
+
+  // Watermark
+  if (withWatermark) {
+    ctx.fillStyle = "#A0A0A0";
+    ctx.font = `bold ${Math.max(12, Math.floor(cols * scale * 0.04))}px system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText("perlerly.com", canvas.width / 2, rows * scale + padding / 2 + 4);
+  }
+
+  return canvas;
+}
+
 export default function PatternDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
   const [pattern, setPattern] = useState<PatternData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,27 +81,36 @@ export default function PatternDetail() {
   const [showCounter, setShowCounter] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
+    if (!slug) return;
     loadPattern();
-  }, [id]);
+  }, [slug]);
 
   useEffect(() => {
     if (user && pattern) loadInteractions();
   }, [user, pattern]);
 
   const loadPattern = async () => {
-    const { data } = await supabase
+    // Try slug first, then fall back to id
+    let query = supabase
       .from("perler_patterns")
-      .select("id, title, description, grid_data, grid_rows, grid_cols, created_at, user_id, profiles(username, display_name)")
-      .eq("id", id!)
-      .single();
+      .select("id, title, slug, description, grid_data, grid_rows, grid_cols, created_at, user_id, profiles(username, display_name)");
+
+    // UUID pattern check
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug!);
+    if (isUUID) {
+      query = query.eq("id", slug!);
+    } else {
+      query = query.eq("slug", slug!);
+    }
+
+    const { data } = await query.single();
 
     if (data) {
       setPattern(data as unknown as PatternData);
       const { count } = await supabase
         .from("pattern_likes")
         .select("*", { count: "exact", head: true })
-        .eq("pattern_id", id!);
+        .eq("pattern_id", (data as any).id);
       setLikeCount(count || 0);
     }
     setLoading(false);
@@ -104,6 +149,39 @@ export default function PatternDetail() {
       setBookmarked(true);
     }
   };
+
+  const downloadPNG = useCallback(() => {
+    if (!pattern) return;
+    const grid = pattern.grid_data as unknown as string[][];
+    const canvas = generatePatternCanvas(grid, pattern.grid_rows, pattern.grid_cols, true);
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = `${pattern.slug || pattern.title.toLowerCase().replace(/\s+/g, "-")}-perlerly.png`;
+    a.click();
+  }, [pattern]);
+
+  const shareOnPinterest = useCallback(async () => {
+    if (!pattern) return;
+    const grid = pattern.grid_data as unknown as string[][];
+    const canvas = generatePatternCanvas(grid, pattern.grid_rows, pattern.grid_cols, true);
+
+    // Upload image to storage for a public URL
+    const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), "image/png"));
+    const filePath = `${pattern.user_id}/${pattern.id}.png`;
+    await supabase.storage.from("pattern-images").upload(filePath, blob, { upsert: true, contentType: "image/png" });
+    const { data: urlData } = supabase.storage.from("pattern-images").getPublicUrl(filePath);
+
+    const pageUrl = `${window.location.origin}/pattern/${pattern.slug || pattern.id}`;
+    const desc = encodeURIComponent(`${pattern.title} - Perler bead pattern on Perlerly.com`);
+    const media = encodeURIComponent(urlData.publicUrl);
+    const url = encodeURIComponent(pageUrl);
+
+    window.open(
+      `https://pinterest.com/pin/create/button/?url=${url}&media=${media}&description=${desc}`,
+      "_blank",
+      "width=750,height=550"
+    );
+  }, [pattern]);
 
   const beadCounts = useMemo(() => {
     if (!pattern) return [];
@@ -178,6 +256,22 @@ export default function PatternDetail() {
               className={cn("p-2 rounded-xl border transition-colors", bookmarked && "text-primary border-primary")}
             >
               <Bookmark size={16} fill={bookmarked ? "currentColor" : "none"} />
+            </button>
+          </div>
+
+          {/* Download & Share */}
+          <div className="flex gap-2">
+            <button
+              onClick={downloadPNG}
+              className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border-2 border-border font-bold text-sm hover:bg-muted transition-colors"
+            >
+              <Download size={16} /> Download
+            </button>
+            <button
+              onClick={shareOnPinterest}
+              className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#E60023] text-white font-bold text-sm hover:opacity-90 transition-opacity"
+            >
+              <Share2 size={16} /> Pinterest
             </button>
           </div>
 
