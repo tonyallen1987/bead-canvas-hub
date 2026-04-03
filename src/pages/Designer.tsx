@@ -3,20 +3,20 @@ import { Eraser, Download, Trash2, Plus, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const PALETTE = [
-  { name: "黑", hex: "#1a1a1a" },
-  { name: "白", hex: "#F5F5F0" },
-  { name: "红", hex: "#E84040" },
-  { name: "粉", hex: "#E8708A" },
-  { name: "珊瑚", hex: "#E88570" },
-  { name: "橙", hex: "#E8A040" },
-  { name: "柠檬", hex: "#E8D060" },
-  { name: "绿", hex: "#6BC5A0" },
-  { name: "薄荷", hex: "#88B890" },
-  { name: "天蓝", hex: "#60B5E8" },
-  { name: "蓝", hex: "#4080E8" },
-  { name: "薰衣草", hex: "#A580D0" },
-  { name: "桃", hex: "#E8B895" },
-  { name: "灰", hex: "#A0A0A0" },
+  { name: "Black", hex: "#1a1a1a" },
+  { name: "White", hex: "#F5F5F0" },
+  { name: "Red", hex: "#E84040" },
+  { name: "Pink", hex: "#E8708A" },
+  { name: "Coral", hex: "#E88570" },
+  { name: "Orange", hex: "#E8A040" },
+  { name: "Lemon", hex: "#E8D060" },
+  { name: "Mint", hex: "#6BC5A0" },
+  { name: "Sage", hex: "#88B890" },
+  { name: "Sky", hex: "#60B5E8" },
+  { name: "Blue", hex: "#4080E8" },
+  { name: "Lavender", hex: "#A580D0" },
+  { name: "Peach", hex: "#E8B895" },
+  { name: "Gray", hex: "#A0A0A0" },
 ];
 
 const EMPTY = "transparent";
@@ -83,11 +83,10 @@ export default function Designer() {
 
   return (
     <div className="container py-8">
-      <h1 className="text-3xl font-extrabold mb-2">拼豆编辑器</h1>
-      <p className="text-muted-foreground mb-6">在网格上绘制你的拼豆图纸</p>
+      <h1 className="text-3xl font-extrabold mb-2">Pattern Designer</h1>
+      <p className="text-muted-foreground mb-6">Draw your bead pattern on the grid</p>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Canvas */}
         <div className="flex-1 flex justify-center">
           <div
             className="grid bg-muted/40 border rounded-xl p-2 select-none touch-none"
@@ -123,47 +122,32 @@ export default function Designer() {
           </div>
         </div>
 
-        {/* Toolbar */}
         <div className="lg:w-64 space-y-5">
-          {/* Size control */}
           <div>
             <label className="text-sm font-semibold mb-2 block">
-              网格大小: {size} × {size}
+              Grid Size: {size} × {size}
             </label>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => resizeGrid(size - 2)}
-                className="p-2 rounded-lg border hover:bg-muted"
-              >
+              <button onClick={() => resizeGrid(size - 2)} className="p-2 rounded-lg border hover:bg-muted">
                 <Minus size={16} />
               </button>
               <div className="flex-1 h-2 bg-muted rounded-full relative">
-                <div
-                  className="absolute h-full bg-primary rounded-full"
-                  style={{ width: `${((size - 4) / 28) * 100}%` }}
-                />
+                <div className="absolute h-full bg-primary rounded-full" style={{ width: `${((size - 4) / 28) * 100}%` }} />
               </div>
-              <button
-                onClick={() => resizeGrid(size + 2)}
-                className="p-2 rounded-lg border hover:bg-muted"
-              >
+              <button onClick={() => resizeGrid(size + 2)} className="p-2 rounded-lg border hover:bg-muted">
                 <Plus size={16} />
               </button>
             </div>
           </div>
 
-          {/* Color palette */}
           <div>
-            <label className="text-sm font-semibold mb-2 block">调色板</label>
+            <label className="text-sm font-semibold mb-2 block">Palette</label>
             <div className="grid grid-cols-7 gap-1.5">
               {PALETTE.map((p) => (
                 <button
                   key={p.hex}
                   title={p.name}
-                  onClick={() => {
-                    setColor(p.hex);
-                    setIsEraser(false);
-                  }}
+                  onClick={() => { setColor(p.hex); setIsEraser(false); }}
                   className={cn(
                     "w-8 h-8 rounded-lg bead-dot transition-transform hover:scale-110",
                     color === p.hex && !isEraser && "ring-2 ring-foreground ring-offset-2 scale-110"
@@ -174,7 +158,6 @@ export default function Designer() {
             </div>
           </div>
 
-          {/* Tools */}
           <div className="flex gap-2">
             <button
               onClick={() => setIsEraser(!isEraser)}
@@ -183,15 +166,13 @@ export default function Designer() {
                 isEraser && "bg-primary text-primary-foreground border-primary"
               )}
             >
-              <Eraser size={16} />
-              橡皮擦
+              <Eraser size={16} /> Eraser
             </button>
             <button
               onClick={clearGrid}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm font-semibold hover:bg-destructive hover:text-primary-foreground transition-colors"
             >
-              <Trash2 size={16} />
-              清空
+              <Trash2 size={16} /> Clear
             </button>
           </div>
 
@@ -199,8 +180,7 @@ export default function Designer() {
             onClick={exportPNG}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:opacity-90 transition-opacity"
           >
-            <Download size={16} />
-            导出 PNG
+            <Download size={16} /> Export PNG
           </button>
         </div>
       </div>

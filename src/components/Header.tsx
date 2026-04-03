@@ -4,10 +4,10 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { label: "探索", to: "/explore", icon: Compass },
-  { label: "编辑器", to: "/designer", icon: PenTool },
-  { label: "图纸库", to: "/patterns", icon: Grid3X3 },
-  { label: "计算器", to: "/counter", icon: Calculator },
+  { label: "Explore", to: "/explore", icon: Compass },
+  { label: "Designer", to: "/designer", icon: PenTool },
+  { label: "Patterns", to: "/patterns", icon: Grid3X3 },
+  { label: "Counter", to: "/counter", icon: Calculator },
 ];
 
 export default function Header() {
@@ -24,12 +24,9 @@ export default function Header() {
             <span className="w-3 h-3 rounded-sm bg-bead-lemon" />
             <span className="w-3 h-3 rounded-sm bg-bead-mint" />
           </div>
-          <span className="text-xl font-extrabold tracking-tight">
-            Perlerly
-          </span>
+          <span className="text-xl font-extrabold tracking-tight">Perlerly</span>
         </Link>
 
-        {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1">
           {navItems.map((item) => {
             const active = location.pathname === item.to;
@@ -51,16 +48,11 @@ export default function Header() {
           })}
         </nav>
 
-        {/* Mobile toggle */}
-        <button
-          className="md:hidden p-2 rounded-lg hover:bg-muted"
-          onClick={() => setOpen(!open)}
-        >
+        <button className="md:hidden p-2 rounded-lg hover:bg-muted" onClick={() => setOpen(!open)}>
           {open ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
 
-      {/* Mobile nav */}
       {open && (
         <nav className="md:hidden border-t bg-card pb-4 px-4">
           {navItems.map((item) => {
