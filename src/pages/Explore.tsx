@@ -1,9 +1,10 @@
-import { Heart, Bookmark, TrendingUp, Clock, Circle, User } from "lucide-react";
+import { Heart, Bookmark, TrendingUp, Clock, Circle, User, Sparkles, Camera } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { seedPatterns, type SeedPattern } from "@/data/seedPatterns";
 
 interface PatternRow {
   id: string;
@@ -16,6 +17,21 @@ interface PatternRow {
   profiles: { username: string | null; display_name: string | null; avatar_url: string | null } | null;
 }
 
+type DisplayPattern = {
+  id: string;
+  title: string;
+  slug: string;
+  grid_data: string[][];
+  grid_rows: number;
+  grid_cols: number;
+  created_at: string;
+  authorName: string;
+  avatarUrl: string | null;
+  isSeed: boolean;
+  difficulty: { label: string; color: string };
+  beadCount: number;
+};
+
 type SortMode = "recent" | "liked";
 
 function getBeadCount(grid: string[][]): number {
@@ -23,9 +39,8 @@ function getBeadCount(grid: string[][]): number {
 }
 
 function getDifficulty(beadCount: number, cols: number): { label: string; color: string } {
-  const total = beadCount;
-  if (total <= 150 || cols <= 12) return { label: "Easy", color: "bg-explore-easy text-white" };
-  if (total <= 500 || cols <= 24) return { label: "Medium", color: "bg-explore-medium text-white" };
+  if (beadCount <= 150 || cols <= 12) return { label: "Easy", color: "bg-explore-easy text-white" };
+  if (beadCount <= 500 || cols <= 24) return { label: "Medium", color: "bg-explore-medium text-white" };
   return { label: "Hard", color: "bg-explore-hard text-white" };
 }
 
@@ -48,6 +63,28 @@ function SkeletonCard() {
   );
 }
 
+function CTACard() {
+  return (
+    <Link
+      to="/designer?import=true"
+      className="break-inside-avoid mb-4 block group"
+    >
+      <div className="bg-gradient-to-br from-explore-active/10 via-explore-easy/10 to-explore-medium/10 rounded-xl border-2 border-dashed border-explore-active/40 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_-12px_hsl(var(--explore-active)/0.3)] hover:border-explore-active/70 p-8 flex flex-col items-center justify-center text-center min-h-[260px] gap-4">
+        <div className="w-14 h-14 rounded-2xl bg-explore-active/15 flex items-center justify-center">
+          <Camera size={28} className="text-explore-active" />
+        </div>
+        <div>
+          <h3 className="font-bold text-foreground text-lg leading-snug">Have a photo?</h3>
+          <p className="text-muted-foreground text-sm mt-1">Turn it into a bead pattern!</p>
+        </div>
+        <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-explore-active text-white font-semibold text-sm shadow-sm group-hover:shadow-md transition-shadow">
+          <Sparkles size={16} /> Try AI Converter
+        </span>
+      </div>
+    </Link>
+  );
+}
+
 export default function Explore() {
   const [patterns, setPatterns] = useState<PatternRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,13 +94,8 @@ export default function Explore() {
   const [sort, setSort] = useState<SortMode>("recent");
   const { user } = useAuth();
 
-  useEffect(() => {
-    loadPatterns();
-  }, []);
-
-  useEffect(() => {
-    if (user && patterns.length > 0) loadUserInteractions();
-  }, [user, patterns]);
+  useEffect(() => { loadPatterns(); }, []);
+  useEffect(() => { if (user && patterns.length > 0) loadUserInteractions(); }, [user, patterns]);
 
   const loadPatterns = async () => {
     const { data } = await supabase
@@ -77,10 +109,7 @@ export default function Explore() {
       setPatterns(data as unknown as PatternRow[]);
       const ids = data.map((p) => p.id);
       if (ids.length > 0) {
-        const { data: likes } = await supabase
-          .from("pattern_likes")
-          .select("pattern_id")
-          .in("pattern_id", ids);
+        const { data: likes } = await supabase.from("pattern_likes").select("pattern_id").in("pattern_id", ids);
         if (likes) {
           const counts: Record<string, number> = {};
           likes.forEach((l) => { counts[l.pattern_id] = (counts[l.pattern_id] || 0) + 1; });
@@ -103,9 +132,8 @@ export default function Explore() {
   };
 
   const toggleLike = async (e: React.MouseEvent, patternId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!user) return;
+    e.preventDefault(); e.stopPropagation();
+    if (!user || patternId.startsWith("seed-")) return;
     const isLiked = liked.has(patternId);
     if (isLiked) {
       await supabase.from("pattern_likes").delete().eq("user_id", user.id).eq("pattern_id", patternId);
@@ -119,9 +147,8 @@ export default function Explore() {
   };
 
   const toggleBookmark = async (e: React.MouseEvent, patternId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!user) return;
+    e.preventDefault(); e.stopPropagation();
+    if (!user || patternId.startsWith("seed-")) return;
     const isBookmarked = bookmarked.has(patternId);
     if (isBookmarked) {
       await supabase.from("pattern_bookmarks").delete().eq("user_id", user.id).eq("pattern_id", patternId);
@@ -132,12 +159,67 @@ export default function Explore() {
     }
   };
 
-  const sortedPatterns = useMemo(() => {
-    return [...patterns].sort((a, b) => {
+  // Merge DB patterns with seed patterns
+  const displayPatterns: DisplayPattern[] = useMemo(() => {
+    const dbItems: DisplayPattern[] = patterns.map((p) => {
+      const grid = p.grid_data as unknown as string[][];
+      const beadCount = getBeadCount(grid);
+      return {
+        id: p.id,
+        title: p.title,
+        slug: p.slug || p.id,
+        grid_data: grid,
+        grid_rows: p.grid_rows,
+        grid_cols: p.grid_cols,
+        created_at: p.created_at,
+        authorName: p.profiles?.display_name || p.profiles?.username || "Anonymous",
+        avatarUrl: (p.profiles as any)?.avatar_url || null,
+        isSeed: false,
+        difficulty: getDifficulty(beadCount, p.grid_cols),
+        beadCount,
+      };
+    });
+
+    const seeds: DisplayPattern[] = seedPatterns.map((s) => {
+      const beadCount = getBeadCount(s.grid_data);
+      return {
+        id: s.id,
+        title: s.title,
+        slug: s.slug,
+        grid_data: s.grid_data,
+        grid_rows: s.grid_rows,
+        grid_cols: s.grid_cols,
+        created_at: s.created_at,
+        authorName: s.author,
+        avatarUrl: null,
+        isSeed: true,
+        difficulty: s.difficulty === "Easy"
+          ? { label: "Easy", color: "bg-explore-easy text-white" }
+          : { label: "Medium", color: "bg-explore-medium text-white" },
+        beadCount,
+      };
+    });
+
+    const all = [...dbItems, ...seeds];
+
+    all.sort((a, b) => {
       if (sort === "liked") return (likeCounts[b.id] || 0) - (likeCounts[a.id] || 0);
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
+
+    return all;
   }, [patterns, sort, likeCounts]);
+
+  // Insert CTA card at position 3
+  const renderItems = useMemo(() => {
+    const items: (DisplayPattern | "cta")[] = [];
+    displayPatterns.forEach((p, i) => {
+      if (i === 3) items.push("cta");
+      items.push(p);
+    });
+    if (displayPatterns.length <= 3) items.push("cta");
+    return items;
+  }, [displayPatterns]);
 
   return (
     <div className="min-h-screen grid-pattern">
@@ -179,35 +261,23 @@ export default function Explore() {
           </div>
         )}
 
-        {/* Empty state */}
-        {!loading && sortedPatterns.length === 0 && (
-          <div className="text-center py-24 text-muted-foreground">
-            <Circle size={48} className="mx-auto mb-4 opacity-30" />
-            <p className="text-lg font-semibold">No patterns shared yet</p>
-            <p className="text-sm mt-1">Be the first to share a creation!</p>
-          </div>
-        )}
-
         {/* Masonry grid */}
-        {!loading && sortedPatterns.length > 0 && (
+        {!loading && (
           <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
-            {sortedPatterns.map((pattern) => {
-              const grid = pattern.grid_data as unknown as string[][];
-              const authorName = pattern.profiles?.display_name || pattern.profiles?.username || "Anonymous";
-              const avatarUrl = (pattern.profiles as any)?.avatar_url;
-              const beadCount = getBeadCount(grid);
-              const difficulty = getDifficulty(beadCount, pattern.grid_cols);
+            {renderItems.map((item, idx) => {
+              if (item === "cta") return <CTACard key="cta" />;
+              const pattern = item;
               const isLiked = liked.has(pattern.id);
               const isBookmarked = bookmarked.has(pattern.id);
 
               return (
                 <Link
                   key={pattern.id}
-                  to={`/pattern/${pattern.slug || pattern.id}`}
+                  to={pattern.isSeed ? "/designer" : `/pattern/${pattern.slug}`}
                   className="break-inside-avoid mb-4 block group"
                 >
                   <div className="bg-card rounded-xl border border-border/60 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_-12px_hsl(var(--explore-active)/0.25)]">
-                    {/* Image area with hover overlay */}
+                    {/* Image area */}
                     <div className="relative bg-muted/30 p-4 flex justify-center">
                       <div
                         className="grid gap-px w-full"
@@ -217,7 +287,7 @@ export default function Explore() {
                           aspectRatio: `${pattern.grid_cols}/${pattern.grid_rows}`,
                         }}
                       >
-                        {grid.flat().map((color, i) => (
+                        {pattern.grid_data.flat().map((color, i) => (
                           <span
                             key={i}
                             className="rounded-[1px]"
@@ -226,15 +296,20 @@ export default function Explore() {
                         ))}
                       </div>
 
-                      {/* Hover action overlay */}
+                      {/* Featured badge */}
+                      {pattern.isSeed && (
+                        <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-explore-active/90 text-white text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                          <Sparkles size={10} /> Staff Pick
+                        </span>
+                      )}
+
+                      {/* Hover actions */}
                       <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/5 transition-colors duration-300 flex items-start justify-end p-3 gap-2 opacity-0 group-hover:opacity-100">
                         <button
                           onClick={(e) => toggleLike(e, pattern.id)}
                           className={cn(
                             "w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm transition-all shadow-sm",
-                            isLiked
-                              ? "bg-explore-active text-white"
-                              : "bg-card/90 text-muted-foreground hover:text-foreground"
+                            isLiked ? "bg-explore-active text-white" : "bg-card/90 text-muted-foreground hover:text-foreground"
                           )}
                         >
                           <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
@@ -243,9 +318,7 @@ export default function Explore() {
                           onClick={(e) => toggleBookmark(e, pattern.id)}
                           className={cn(
                             "w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm transition-all shadow-sm",
-                            isBookmarked
-                              ? "bg-explore-active text-white"
-                              : "bg-card/90 text-muted-foreground hover:text-foreground"
+                            isBookmarked ? "bg-explore-active text-white" : "bg-card/90 text-muted-foreground hover:text-foreground"
                           )}
                         >
                           <Bookmark size={16} fill={isBookmarked ? "currentColor" : "none"} />
@@ -257,13 +330,12 @@ export default function Explore() {
                     <div className="p-4 space-y-3">
                       <h3 className="font-bold text-foreground leading-snug">{pattern.title}</h3>
 
-                      {/* Stats & difficulty */}
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-semibold text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
-                          {beadCount.toLocaleString()} beads
+                          {pattern.beadCount.toLocaleString()} beads
                         </span>
-                        <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full", difficulty.color)}>
-                          {difficulty.label}
+                        <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full", pattern.difficulty.color)}>
+                          {pattern.difficulty.label}
                         </span>
                         {(likeCounts[pattern.id] || 0) > 0 && (
                           <span className="text-xs text-muted-foreground flex items-center gap-1 ml-auto">
@@ -273,16 +345,15 @@ export default function Explore() {
                         )}
                       </div>
 
-                      {/* Creator */}
                       <div className="flex items-center gap-2 pt-1 border-t border-border/50">
-                        {avatarUrl ? (
-                          <img src={avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
+                        {pattern.avatarUrl ? (
+                          <img src={pattern.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
                         ) : (
                           <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
                             <User size={12} className="text-muted-foreground" />
                           </span>
                         )}
-                        <span className="text-xs text-muted-foreground font-medium truncate">@{authorName}</span>
+                        <span className="text-xs text-muted-foreground font-medium truncate">@{pattern.authorName}</span>
                       </div>
                     </div>
                   </div>
