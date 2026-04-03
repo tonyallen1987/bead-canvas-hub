@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 interface PatternRow {
   id: string;
   title: string;
+  slug: string | null;
   grid_data: string[][];
   grid_rows: number;
   grid_cols: number;
