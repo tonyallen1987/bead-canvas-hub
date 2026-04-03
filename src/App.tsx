@@ -11,6 +11,7 @@ import Designer from "./pages/Designer";
 import Patterns from "./pages/Patterns";
 import Counter from "./pages/Counter";
 import Auth from "./pages/Auth";
+import PatternDetail from "./pages/PatternDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/designer" element={<Designer />} />
             <Route path="/patterns" element={<Patterns />} />
             <Route path="/counter" element={<Counter />} />
+            <Route path="/pattern/:id" element={<PatternDetail />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
