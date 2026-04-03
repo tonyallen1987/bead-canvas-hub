@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { trackGeneratePattern } from "@/lib/analytics";
 
 // Extended Perler bead palette with RGB values for color matching
 const PERLER_COLORS = [
