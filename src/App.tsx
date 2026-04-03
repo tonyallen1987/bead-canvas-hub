@@ -15,6 +15,7 @@ import Counter from "./pages/Counter";
 import Auth from "./pages/Auth";
 import PatternDetail from "./pages/PatternDetail";
 import NotFound from "./pages/NotFound";
+import AdminImport from "./pages/AdminImport";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/counter" element={<Counter />} />
             <Route path="/pattern/:slug" element={<PatternDetail />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/admin-import" element={<AdminImport />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
