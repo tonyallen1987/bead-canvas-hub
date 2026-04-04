@@ -136,6 +136,7 @@ export default function AdminImport() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<ExploreCategory | "">("");
 
   useEffect(() => {
     if (!checking && !user) navigate("/auth");
