@@ -28,11 +28,15 @@ interface PatternData {
   title: string;
   slug: string | null;
   description: string | null;
+  category: string | null;
+  difficulty: string | null;
+  bead_count: number | null;
   grid_data: string[][];
   grid_rows: number;
   grid_cols: number;
   created_at: string;
   user_id: string;
+  thumbnail_url: string | null;
   profiles: { username: string | null; display_name: string | null } | null;
 }
 
