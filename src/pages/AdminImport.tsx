@@ -56,12 +56,29 @@ export default function AdminImport() {
     });
   };
 
-  const fileToBase64 = (file: File): Promise<string> =>
+  /** Convert any image file to a PNG base64 data URL via canvas */
+  const fileToPngBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+      const img = new window.Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          URL.revokeObjectURL(url);
+          return reject(new Error("Canvas not supported"));
+        }
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error(`Could not decode image: ${file.name}`));
+      };
+      img.src = url;
     });
 
   const handleImport = async () => {
@@ -75,12 +92,25 @@ export default function AdminImport() {
 
     for (let i = 0; i < files.length; i += BATCH_SIZE) {
       const batch = files.slice(i, i + BATCH_SIZE);
-      const images = await Promise.all(
-        batch.map(async (entry) => ({
-          filename: entry.file.name,
-          base64: await fileToBase64(entry.file),
-        }))
-      );
+      const images: { filename: string; base64: string }[] = [];
+      for (const entry of batch) {
+        try {
+          const base64 = await fileToPngBase64(entry.file);
+          images.push({ filename: entry.file.name, base64 });
+        } catch (e) {
+          setLogs((prev) => [
+            ...prev,
+            {
+              title: entry.file.name,
+              success: false,
+              error: e instanceof Error ? e.message : "Failed to convert image to PNG",
+            },
+          ]);
+          completed++;
+          setProgress(completed);
+        }
+      }
+      if (images.length === 0) continue;
 
       try {
         const { data, error } = await supabase.functions.invoke(
