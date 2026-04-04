@@ -1,3 +1,4 @@
+import PageMeta from "@/components/PageMeta";
 import { useState, useCallback } from "react";
 import { Eraser, Download, Trash2, Plus, Minus, Save, Share2 } from "lucide-react";
 import ImportFromImage from "@/components/designer/ImportFromImage";

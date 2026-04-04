@@ -1,3 +1,4 @@
+import PageMeta from "@/components/PageMeta";
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Search, Clock, Palette, Sparkles, ArrowRight } from "lucide-react";

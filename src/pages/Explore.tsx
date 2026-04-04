@@ -1,3 +1,4 @@
+import PageMeta from "@/components/PageMeta";
 import { Heart, Bookmark, TrendingUp, Clock, User, Sparkles, Camera, Loader2 } from "lucide-react";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";

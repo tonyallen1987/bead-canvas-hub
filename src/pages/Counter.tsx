@@ -1,3 +1,4 @@
+import PageMeta from "@/components/PageMeta";
 import { useState, useMemo } from "react";
 import { Calculator, RotateCcw } from "lucide-react";
 
