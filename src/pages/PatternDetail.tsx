@@ -93,7 +93,7 @@ export default function PatternDetail() {
     // Try slug first, then fall back to id
     let query = supabase
       .from("perler_patterns")
-      .select("id, title, slug, description, grid_data, grid_rows, grid_cols, created_at, user_id, profiles(username, display_name)");
+      .select("id, title, slug, description, grid_data, grid_rows, grid_cols, created_at, user_id, profiles!perler_patterns_user_id_fkey(username, display_name)");
 
     // UUID pattern check
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug!);
