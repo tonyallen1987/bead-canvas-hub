@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
         const title = titleFromFilename(img.filename);
         const uniqueColors = paletteSet.size;
         const difficulty = uniqueColors <= 5 ? "Easy" : uniqueColors <= 12 ? "Medium" : "Hard";
-        const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
+        const category = requestCategory || CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
 
         const { error: insertError } = await adminClient.from("perler_patterns").insert({
           title,
