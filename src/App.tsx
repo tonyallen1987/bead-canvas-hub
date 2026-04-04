@@ -31,31 +31,29 @@ function PageViewTracker() {
 
 function App() {
   return (
-    <HelmetProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider delayDuration={0}>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <PageViewTracker />
-            <AuthProvider>
-              <Header />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/explore" element={<Explore />} />
-                <Route path="/designer" element={<Designer />} />
-                <Route path="/patterns" element={<Patterns />} />
-                <Route path="/counter" element={<Counter />} />
-                <Route path="/pattern/:slug" element={<PatternDetail />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/admin-import" element={<AdminImport />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider delayDuration={0}>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <PageViewTracker />
+          <AuthProvider>
+            <Header />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/explore" element={<Explore />} />
+              <Route path="/designer" element={<Designer />} />
+              <Route path="/patterns" element={<Patterns />} />
+              <Route path="/counter" element={<Counter />} />
+              <Route path="/pattern/:slug" element={<PatternDetail />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/admin-import" element={<AdminImport />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 }
 
