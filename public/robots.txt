@@ -1,21 +1,26 @@
 User-agent: Googlebot
 Allow: /
 Disallow: /admin-import
+Disallow: /auth
 
 User-agent: Bingbot
 Allow: /
 Disallow: /admin-import
+Disallow: /auth
 
 User-agent: Twitterbot
 Allow: /
 Disallow: /admin-import
+Disallow: /auth
 
 User-agent: facebookexternalhit
 Allow: /
 Disallow: /admin-import
+Disallow: /auth
 
 User-agent: *
 Allow: /
 Disallow: /admin-import
+Disallow: /auth
 
 Sitemap: https://perlerly.com/sitemap.xml
