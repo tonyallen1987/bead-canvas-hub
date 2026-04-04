@@ -3,9 +3,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { Image } from "npm:imagescript@1.3.0";
+import { decode as decodePng } from "https://deno.land/x/pngs@0.1.1/mod.ts";
 
-// --- Perler color palette (duplicated from src/data/perlerColors.ts) ---
+// --- Perler color palette ---
 interface PerlerColor {
   id: string;
   name: string;
@@ -102,13 +102,54 @@ function generateSlug(title: string): string {
     .replace(/^-|-$/g, "") || "pattern";
 }
 
+/** Nearest-neighbor resize of RGBA pixel data */
+function resizePixels(
+  src: Uint8Array,
+  srcW: number,
+  srcH: number,
+  dstW: number,
+  dstH: number
+): Uint8Array {
+  const dst = new Uint8Array(dstW * dstH * 4);
+  for (let y = 0; y < dstH; y++) {
+    const sy = Math.floor(y * srcH / dstH);
+    for (let x = 0; x < dstW; x++) {
+      const sx = Math.floor(x * srcW / dstW);
+      const si = (sy * srcW + sx) * 4;
+      const di = (y * dstW + x) * 4;
+      dst[di] = src[si];
+      dst[di + 1] = src[si + 1];
+      dst[di + 2] = src[si + 2];
+      dst[di + 3] = src[si + 3];
+    }
+  }
+  return dst;
+}
+
+/** Decode image bytes to RGBA pixels. Supports PNG natively, JPEG/WebP via ImageBitmap. */
+async function decodeImage(bytes: Uint8Array): Promise<{ width: number; height: number; data: Uint8Array }> {
+  // Check for PNG signature
+  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+    const png = decodePng(bytes);
+    return { width: png.width, height: png.height, data: new Uint8Array(png.image) };
+  }
+
+  // For JPEG/WebP, try createImageBitmap + OffscreenCanvas
+  const blob = new Blob([bytes]);
+  const bitmap = await createImageBitmap(blob);
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(bitmap, 0, 0);
+  const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+  return { width: bitmap.width, height: bitmap.height, data: new Uint8Array(imageData.data.buffer) };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // Validate auth
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -119,9 +160,8 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
 
-    // Verify the user is authenticated using their token
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -133,7 +173,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Service role client for inserts (bypasses RLS)
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     const { images } = await req.json() as {
@@ -151,15 +190,12 @@ Deno.serve(async (req) => {
 
     for (const img of images) {
       try {
-        // Decode base64
         const raw = img.base64.includes(",") ? img.base64.split(",")[1] : img.base64;
         const bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
 
-        // Decode and resize to 32x32
-        const decoded = await Image.decode(bytes);
-        const resized = decoded.resize(32, 32);
+        const decoded = await decodeImage(bytes);
+        const resized = resizePixels(decoded.data, decoded.width, decoded.height, 32, 32);
 
-        // Build grid_data and collect palette
         const gridData: string[][] = [];
         const paletteSet = new Set<string>();
         let beadCount = 0;
@@ -167,16 +203,16 @@ Deno.serve(async (req) => {
         for (let y = 0; y < 32; y++) {
           const row: string[] = [];
           for (let x = 0; x < 32; x++) {
-            const pixel = resized.getPixelAt(x + 1, y + 1); // 1-indexed in ImageScript
-            const a = (pixel) & 0xff;
-            const b_val = (pixel >> 8) & 0xff;
-            const g_val = (pixel >> 16) & 0xff;
-            const r_val = (pixel >> 24) & 0xff;
+            const i = (y * 32 + x) * 4;
+            const r = resized[i];
+            const g = resized[i + 1];
+            const b = resized[i + 2];
+            const a = resized[i + 3];
 
             if (a < 128) {
               row.push("transparent");
             } else {
-              const hex = nearestPerlerColor(r_val, g_val, b_val);
+              const hex = nearestPerlerColor(r, g, b);
               row.push(hex);
               paletteSet.add(hex);
               beadCount++;
