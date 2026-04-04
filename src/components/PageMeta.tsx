@@ -1,4 +1,4 @@
-import { Helmet } from "react-helmet-async";
+import { useEffect } from "react";
 
 interface PageMetaProps {
   title: string;
@@ -7,16 +7,30 @@ interface PageMetaProps {
 }
 
 export default function PageMeta({ title, description, ogImage }: PageMetaProps) {
-  return (
-    <Helmet>
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
-      <meta name="twitter:title" content={title} />
-      <meta name="twitter:description" content={description} />
-      {ogImage && <meta property="og:image" content={ogImage} />}
-      {ogImage && <meta name="twitter:image" content={ogImage} />}
-    </Helmet>
-  );
+  useEffect(() => {
+    document.title = title;
+
+    const setMeta = (attr: string, value: string, content: string) => {
+      let el = document.querySelector(`meta[${attr}="${value}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(attr, value);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+
+    setMeta("name", "description", description);
+    setMeta("property", "og:title", title);
+    setMeta("property", "og:description", description);
+    setMeta("name", "twitter:title", title);
+    setMeta("name", "twitter:description", description);
+
+    if (ogImage) {
+      setMeta("property", "og:image", ogImage);
+      setMeta("name", "twitter:image", ogImage);
+    }
+  }, [title, description, ogImage]);
+
+  return null;
 }
