@@ -40,6 +40,7 @@ export default function Counter() {
 
   return (
     <div className="container py-8 max-w-2xl">
+      <PageMeta title="Bead Counter – Perlerly" description="Count and tally your Perler beads by color. A simple tool to help you prepare before starting your next bead project." />
       <div className="flex items-center gap-3 mb-2">
         <div className="w-10 h-10 rounded-xl bg-bead-lemon flex items-center justify-center">
           <Calculator size={20} />

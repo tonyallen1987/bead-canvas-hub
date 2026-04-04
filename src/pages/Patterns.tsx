@@ -57,6 +57,7 @@ export default function Patterns() {
 
   return (
     <div className="min-h-screen grid-pattern">
+      <PageMeta title="My Patterns – Perlerly" description="View and manage all your saved Perler bead patterns in one place." />
       <div className="container py-10">
         {/* Header */}
         <div className="mb-8">
