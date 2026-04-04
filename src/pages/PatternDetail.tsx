@@ -216,7 +216,7 @@ export default function PatternDetail() {
 
   return (
     <div className="container py-8 max-w-4xl">
-      <PageMeta title={patternTitle} description={patternDesc} />
+      <PageMeta title={patternTitle} description={patternDesc} ogImage={pattern.thumbnail_url || undefined} />
       <Link to="/explore" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft size={16} /> Back to Explore
       </Link>
