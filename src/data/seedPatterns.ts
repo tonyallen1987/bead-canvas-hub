@@ -27,6 +27,8 @@ function g(rows: string[][], cols: number): string[][] {
   });
 }
 
+export type ExploreCategory = "Animals" | "Food" | "Games" | "Nature" | "Sports" | "Holidays" | "Letters" | "Abstract";
+
 export interface SeedPattern {
   id: string;
   title: string;
@@ -38,6 +40,8 @@ export interface SeedPattern {
   difficulty: "Easy" | "Medium";
   author: string;
   isSeed: true;
+  category: ExploreCategory;
+  tags: string[];
 }
 
 // ── 1. Classic Red Heart (11×10) ────────────────────────────
@@ -173,6 +177,8 @@ export const seedPatterns: SeedPattern[] = [
     difficulty: "Easy",
     author: "Perlerly Team",
     isSeed: true,
+    category: "Abstract",
+    tags: ["heart", "love", "valentines", "beginner"],
   },
   {
     id: "seed-panda",
@@ -185,6 +191,8 @@ export const seedPatterns: SeedPattern[] = [
     difficulty: "Easy",
     author: "Perlerly Team",
     isSeed: true,
+    category: "Animals",
+    tags: ["panda", "kawaii", "cute", "bear"],
   },
   {
     id: "seed-sunflower",
@@ -197,6 +205,8 @@ export const seedPatterns: SeedPattern[] = [
     difficulty: "Medium",
     author: "Perlerly Team",
     isSeed: true,
+    category: "Nature",
+    tags: ["flower", "sunflower", "plant", "garden"],
   },
   {
     id: "seed-controller",
@@ -209,6 +219,8 @@ export const seedPatterns: SeedPattern[] = [
     difficulty: "Medium",
     author: "Perlerly Team",
     isSeed: true,
+    category: "Games",
+    tags: ["gaming", "controller", "retro", "pixel"],
   },
   {
     id: "seed-dino",
@@ -221,6 +233,8 @@ export const seedPatterns: SeedPattern[] = [
     difficulty: "Easy",
     author: "Perlerly Team",
     isSeed: true,
+    category: "Animals",
+    tags: ["dinosaur", "cute", "prehistoric", "beginner"],
   },
   {
     id: "seed-cloud",
@@ -233,6 +247,8 @@ export const seedPatterns: SeedPattern[] = [
     difficulty: "Easy",
     author: "Perlerly Team",
     isSeed: true,
+    category: "Nature",
+    tags: ["cloud", "rainbow", "sky", "weather"],
   },
   {
     id: "seed-rocket",
@@ -245,6 +261,8 @@ export const seedPatterns: SeedPattern[] = [
     difficulty: "Medium",
     author: "Perlerly Team",
     isSeed: true,
+    category: "Abstract",
+    tags: ["rocket", "space", "sci-fi", "vehicle"],
   },
   {
     id: "seed-corgi",
@@ -257,5 +275,7 @@ export const seedPatterns: SeedPattern[] = [
     difficulty: "Easy",
     author: "Perlerly Team",
     isSeed: true,
+    category: "Animals",
+    tags: ["corgi", "dog", "pet", "cute"],
   },
 ];
