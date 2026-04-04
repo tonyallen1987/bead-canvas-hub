@@ -210,8 +210,13 @@ export default function PatternDetail() {
   const authorName = pattern.profiles?.display_name || pattern.profiles?.username || "Anonymous";
   const cellSize = Math.min(Math.floor(480 / Math.max(pattern.grid_cols, pattern.grid_rows)), 32);
 
+  const patternTitle = `${pattern.title} – Free Perler Bead Pattern | Perlerly`;
+  const patternDesc = `Download this free ${pattern.category || "Perler"} Perler bead pattern. ${pattern.grid_cols}×${pattern.grid_rows} grid, ${totalBeads} beads total, ${pattern.difficulty || "Unknown"} difficulty. Created by ${authorName} on Perlerly.`;
+  const patternImageAlt = `${pattern.title} pixel art perler bead pattern by ${authorName} – ${totalBeads} beads, ${pattern.category || "Perler"} category`;
+
   return (
     <div className="container py-8 max-w-4xl">
+      <PageMeta title={patternTitle} description={patternDesc} />
       <Link to="/explore" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft size={16} /> Back to Explore
       </Link>

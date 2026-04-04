@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { Compass, PenTool, Grid3X3, Calculator, ArrowRight } from "lucide-react";
+import { Compass, PenTool, Grid3X3, Calculator, ArrowRight, ChevronDown } from "lucide-react";
 import BeadDecoration from "@/components/BeadDecoration";
 import PageMeta from "@/components/PageMeta";
+import { useState } from "react";
 
 const features = [
   {
@@ -34,10 +35,67 @@ const features = [
   },
 ];
 
+const featureDetails = [
+  {
+    title: "Pattern Designer",
+    desc: "Upload an image and convert it into a pixel art Perler bead pattern instantly. Supports PNG format with automatic color mapping and grid sizing.",
+  },
+  {
+    title: "Explore Community Patterns",
+    desc: "Browse hundreds of free Perler bead patterns organized by difficulty (Easy, Medium, Hard), category, and bead count.",
+  },
+  {
+    title: "Bead Counter",
+    desc: "Count your beads by color before starting a project. Never run out mid-pattern again.",
+  },
+];
+
+const faqs = [
+  {
+    q: "Is Perlerly free to use?",
+    a: "Yes, Perlerly is completely free. Create an account to save and share your patterns.",
+  },
+  {
+    q: "What image formats can I upload?",
+    a: "Currently PNG images are supported. Upload any PNG and the designer will convert it into a Perler bead pattern automatically.",
+  },
+  {
+    q: "What grid sizes are supported?",
+    a: "The designer supports common grid sizes including 16×16, 32×32, and larger custom sizes.",
+  },
+];
+
+function FAQItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-b border-border/60 last:border-0">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between py-5 text-left"
+      >
+        <span className="font-semibold text-foreground">{q}</span>
+        <ChevronDown
+          size={18}
+          className={`text-muted-foreground shrink-0 ml-4 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && (
+        <p className="pb-5 text-muted-foreground text-sm leading-relaxed -mt-1">
+          {a}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function Index() {
   return (
     <div className="min-h-[calc(100vh-4rem)]">
-      <PageMeta title="Perlerly – Perler Bead Pattern Designer & Community" description="Design, share, and explore Perler bead patterns. Upload any image and convert it into a pixel art bead pattern instantly. Join the Perlerly community." />
+      <PageMeta
+        title="Perlerly – Perler Bead Pattern Designer & Community"
+        description="Design, share, and explore Perler bead patterns. Upload any image and convert it into a pixel art bead pattern instantly. Join the Perlerly community."
+      />
+
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 grid-pattern opacity-40" />
@@ -65,8 +123,8 @@ export default function Index() {
             <br />
             <span className="text-primary">Starts Here</span>
           </h1>
-          <p className="text-muted-foreground text-lg md:text-xl max-w-lg">
-            Design, share, and explore — Perlerly is the all-in-one community for Perler bead enthusiasts
+          <p className="text-muted-foreground text-lg md:text-xl max-w-2xl">
+            The free Perler bead pattern maker and community. Convert any image into a pixel art bead pattern, browse free patterns by difficulty and category, and connect with fellow Perler bead artists.
           </p>
 
           <div className="flex gap-3 mt-2">
@@ -108,6 +166,41 @@ export default function Index() {
               />
             </Link>
           ))}
+        </div>
+      </section>
+
+      {/* What is Perlerly? */}
+      <section className="container py-16 border-t">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-3xl font-extrabold tracking-tight mb-6">What is Perlerly?</h2>
+          <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
+            Perlerly is a free online tool and community for Perler bead enthusiasts. Upload any image — photo, pixel art, or drawing — and our designer automatically converts it into a Perler bead pattern with exact bead counts by color. Browse patterns shared by the community, save your favorites, and use the bead counter to prepare your supplies before you start.
+          </p>
+        </div>
+      </section>
+
+      {/* Features detail */}
+      <section className="container py-16 border-t">
+        <h2 className="text-3xl font-extrabold tracking-tight text-center mb-10">Features</h2>
+        <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          {featureDetails.map((f) => (
+            <div key={f.title} className="bg-card rounded-2xl border p-6">
+              <h3 className="font-bold text-lg mb-2">{f.title}</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="container py-16 border-t">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-3xl font-extrabold tracking-tight text-center mb-8">Frequently Asked Questions</h2>
+          <div className="bg-card rounded-2xl border px-6">
+            {faqs.map((faq) => (
+              <FAQItem key={faq.q} q={faq.q} a={faq.a} />
+            ))}
+          </div>
         </div>
       </section>
 
