@@ -25,8 +25,8 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b">
       <div className="container flex items-center justify-between h-16">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="grid grid-cols-2 gap-0.5">
+        <Link to="/" className="flex items-center gap-2 group" aria-label="Perlerly – Perler Bead Pattern Designer and Community">
+          <div className="grid grid-cols-2 gap-0.5" role="img" aria-label="Perlerly – Perler Bead Pattern Designer and Community">
             <span className="w-3 h-3 rounded-sm bg-bead-pink" />
             <span className="w-3 h-3 rounded-sm bg-bead-sky" />
             <span className="w-3 h-3 rounded-sm bg-bead-lemon" />

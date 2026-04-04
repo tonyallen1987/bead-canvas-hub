@@ -320,7 +320,7 @@ export default function Explore() {
                   >
                     <div className="bg-card rounded-xl border border-border/60 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_-12px_hsl(var(--explore-active)/0.25)]">
                       {/* Image area */}
-                      <div className="relative bg-muted/30 p-4 flex justify-center">
+                      <div className="relative bg-muted/30 p-4 flex justify-center" role="img" aria-label={`${pattern.title} perler bead pattern – ${pattern.grid_cols}×${pattern.grid_rows} grid, ${pattern.difficulty.label} difficulty`}>
                         <div
                           className="grid gap-px w-full"
                           style={{
@@ -389,7 +389,7 @@ export default function Explore() {
 
                         <div className="flex items-center gap-2 pt-1 border-t border-border/50">
                           {pattern.avatarUrl ? (
-                            <img src={pattern.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
+                            <img src={pattern.avatarUrl} alt={`${pattern.authorName} avatar`} className="w-6 h-6 rounded-full object-cover" />
                           ) : (
                             <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
                               <User size={12} className="text-muted-foreground" />

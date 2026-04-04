@@ -4,6 +4,7 @@ import { Heart, Bookmark, ArrowLeft, Calculator, Download, Share2 } from "lucide
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import PageMeta from "@/components/PageMeta";
 
 const PALETTE = [
   { name: "Black", hex: "#1a1a1a" },
@@ -27,11 +28,15 @@ interface PatternData {
   title: string;
   slug: string | null;
   description: string | null;
+  category: string | null;
+  difficulty: string | null;
+  bead_count: number | null;
   grid_data: string[][];
   grid_rows: number;
   grid_cols: number;
   created_at: string;
   user_id: string;
+  thumbnail_url: string | null;
   profiles: { username: string | null; display_name: string | null } | null;
 }
 
@@ -93,7 +98,7 @@ export default function PatternDetail() {
     // Try slug first, then fall back to id
     let query = supabase
       .from("perler_patterns")
-      .select("id, title, slug, description, grid_data, grid_rows, grid_cols, created_at, user_id, profiles!perler_patterns_user_id_fkey(username, display_name)");
+      .select("id, title, slug, description, category, difficulty, bead_count, grid_data, grid_rows, grid_cols, created_at, user_id, thumbnail_url, profiles!perler_patterns_user_id_fkey(username, display_name)");
 
     // UUID pattern check
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug!);
@@ -205,8 +210,13 @@ export default function PatternDetail() {
   const authorName = pattern.profiles?.display_name || pattern.profiles?.username || "Anonymous";
   const cellSize = Math.min(Math.floor(480 / Math.max(pattern.grid_cols, pattern.grid_rows)), 32);
 
+  const patternTitle = `${pattern.title} – Free Perler Bead Pattern | Perlerly`;
+  const patternDesc = `Download this free ${pattern.category || "Perler"} Perler bead pattern. ${pattern.grid_cols}×${pattern.grid_rows} grid, ${totalBeads} beads total, ${pattern.difficulty || "Unknown"} difficulty. Created by ${authorName} on Perlerly.`;
+  const patternImageAlt = `${pattern.title} pixel art perler bead pattern by ${authorName} – ${totalBeads} beads, ${pattern.category || "Perler"} category`;
+
   return (
     <div className="container py-8 max-w-4xl">
+      <PageMeta title={patternTitle} description={patternDesc} ogImage={pattern.thumbnail_url || undefined} />
       <Link to="/explore" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft size={16} /> Back to Explore
       </Link>
@@ -214,7 +224,7 @@ export default function PatternDetail() {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Pattern preview */}
         <div className="flex-1 flex justify-center">
-          <div className="bg-muted/30 rounded-2xl border p-6 inline-block">
+          <div className="bg-muted/30 rounded-2xl border p-6 inline-block" role="img" aria-label={patternImageAlt}>
             <div
               className="grid gap-px"
               style={{

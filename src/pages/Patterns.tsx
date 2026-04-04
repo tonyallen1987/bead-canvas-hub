@@ -154,7 +154,7 @@ export default function Patterns() {
               >
                 <div className="bg-card rounded-xl border border-border/60 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_-12px_hsl(var(--explore-active)/0.25)]">
                   {/* Preview */}
-                  <div className="relative bg-muted/30 p-4 flex justify-center">
+                  <div className="relative bg-muted/30 p-4 flex justify-center" role="img" aria-label={`${pattern.title} perler bead pattern – ${pattern.grid_cols}×${pattern.grid_rows} grid, ${pattern.difficulty} difficulty`}>
                     <div
                       className="grid gap-px w-full"
                       style={{
