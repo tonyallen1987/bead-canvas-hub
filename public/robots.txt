@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin-import
 
-Sitemap: https://perlerly.lovable.app/sitemap.xml
+Sitemap: https://perlerly.com/sitemap.xml
