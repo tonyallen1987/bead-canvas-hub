@@ -92,12 +92,25 @@ export default function AdminImport() {
 
     for (let i = 0; i < files.length; i += BATCH_SIZE) {
       const batch = files.slice(i, i + BATCH_SIZE);
-      const images = await Promise.all(
-        batch.map(async (entry) => ({
-          filename: entry.file.name,
-          base64: await fileToBase64(entry.file),
-        }))
-      );
+      const images: { filename: string; base64: string }[] = [];
+      for (const entry of batch) {
+        try {
+          const base64 = await fileToPngBase64(entry.file);
+          images.push({ filename: entry.file.name, base64 });
+        } catch (e) {
+          setLogs((prev) => [
+            ...prev,
+            {
+              title: entry.file.name,
+              success: false,
+              error: e instanceof Error ? e.message : "Failed to convert image to PNG",
+            },
+          ]);
+          completed++;
+          setProgress(completed);
+        }
+      }
+      if (images.length === 0) continue;
 
       try {
         const { data, error } = await supabase.functions.invoke(
