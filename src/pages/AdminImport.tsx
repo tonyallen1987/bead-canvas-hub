@@ -311,6 +311,22 @@ export default function AdminImport() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Category selector */}
+            <div className="flex items-center gap-3">
+              <Tag size={16} className="text-muted-foreground" />
+              <label className="text-sm font-medium">Category for imported patterns:</label>
+              <Select value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as ExploreCategory)}>
+                <SelectTrigger className="w-[180px] h-9 text-sm">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {IMPORT_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Drop zone */}
             <div
               onDragOver={(e) => {
