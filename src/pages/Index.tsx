@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Compass, PenTool, Grid3X3, Calculator, ArrowRight } from "lucide-react";
 import BeadDecoration from "@/components/BeadDecoration";
+import PageMeta from "@/components/PageMeta";
 
 const features = [
   {
@@ -36,6 +37,7 @@ const features = [
 export default function Index() {
   return (
     <div className="min-h-[calc(100vh-4rem)]">
+      <PageMeta title="Perlerly – Perler Bead Pattern Designer & Community" description="Design, share, and explore Perler bead patterns. Upload any image and convert it into a pixel art bead pattern instantly. Join the Perlerly community." />
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 grid-pattern opacity-40" />

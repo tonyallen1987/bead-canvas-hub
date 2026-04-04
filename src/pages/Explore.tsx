@@ -1,3 +1,4 @@
+import PageMeta from "@/components/PageMeta";
 import { Heart, Bookmark, TrendingUp, Clock, User, Sparkles, Camera, Loader2 } from "lucide-react";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
@@ -262,6 +263,7 @@ export default function Explore() {
 
   return (
     <div className="min-h-screen grid-pattern">
+      <PageMeta title="Explore Perler Bead Patterns – Perlerly" description="Browse hundreds of pixel art Perler bead patterns shared by the community. Find patterns by difficulty, category, and bead count." />
       <div className="container py-10">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">

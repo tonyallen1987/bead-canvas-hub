@@ -1,3 +1,4 @@
+import PageMeta from "@/components/PageMeta";
 import { useState, useCallback } from "react";
 import { Eraser, Download, Trash2, Plus, Minus, Save, Share2 } from "lucide-react";
 import ImportFromImage from "@/components/designer/ImportFromImage";
@@ -115,6 +116,7 @@ export default function Designer() {
 
   return (
     <div className="container py-8">
+      <PageMeta title="Perler Bead Pattern Designer – Perlerly" description="Upload an image and convert it into a Perler bead pattern automatically. Customize colors, grid size, and difficulty. Free online tool." />
       <h1 className="text-3xl font-extrabold mb-2">Pattern Designer</h1>
       <p className="text-muted-foreground mb-6">Draw your bead pattern on the grid</p>
 
