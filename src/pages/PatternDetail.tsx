@@ -4,6 +4,7 @@ import { Heart, Bookmark, ArrowLeft, Calculator, Download, Share2 } from "lucide
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import PageMeta from "@/components/PageMeta";
 
 const PALETTE = [
   { name: "Black", hex: "#1a1a1a" },
