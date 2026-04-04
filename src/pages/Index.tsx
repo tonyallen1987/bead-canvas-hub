@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Compass, PenTool, Grid3X3, Calculator, ArrowRight } from "lucide-react";
 import BeadDecoration from "@/components/BeadDecoration";
+import PageMeta from "@/components/PageMeta";
 
 const features = [
   {
