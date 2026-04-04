@@ -175,8 +175,9 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { images } = await req.json() as {
+    const { images, category: requestCategory } = await req.json() as {
       images: { filename: string; base64: string }[];
+      category?: string;
     };
 
     if (!images || !Array.isArray(images) || images.length === 0) {
