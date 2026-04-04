@@ -1,5 +1,5 @@
-import { Heart, Bookmark, TrendingUp, Clock, Circle, User, Sparkles, Camera } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { Heart, Bookmark, TrendingUp, Clock, User, Sparkles, Camera, Loader2 } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +33,8 @@ type DisplayPattern = {
 };
 
 type SortMode = "recent" | "liked";
+
+const PAGE_SIZE = 20;
 
 function getBeadCount(grid: string[][]): number {
   return grid.flat().filter((c) => c && c !== "transparent").length;
@@ -88,37 +90,74 @@ function CTACard() {
 export default function Explore() {
   const [patterns, setPatterns] = useState<PatternRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [liked, setLiked] = useState<Set<string>>(new Set());
   const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [sort, setSort] = useState<SortMode>("recent");
   const { user } = useAuth();
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { loadPatterns(); }, []);
+  useEffect(() => { loadPatterns(true); }, []);
   useEffect(() => { if (user && patterns.length > 0) loadUserInteractions(); }, [user, patterns]);
 
-  const loadPatterns = async () => {
+  const loadPatterns = async (initial = false) => {
+    if (initial) {
+      setLoading(true);
+      setPatterns([]);
+      setHasMore(true);
+    } else {
+      setLoadingMore(true);
+    }
+
+    const from = initial ? 0 : patterns.length;
+    const to = from + PAGE_SIZE - 1;
+
     const { data } = await supabase
       .from("perler_patterns")
       .select("id, title, slug, grid_data, grid_rows, grid_cols, created_at, profiles!perler_patterns_user_id_fkey(username, display_name, avatar_url)")
       .eq("is_public", true)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .range(from, to);
 
     if (data) {
-      setPatterns(data as unknown as PatternRow[]);
-      const ids = data.map((p) => p.id);
+      const newPatterns = data as unknown as PatternRow[];
+      setPatterns((prev) => initial ? newPatterns : [...prev, ...newPatterns]);
+      if (newPatterns.length < PAGE_SIZE) setHasMore(false);
+
+      // Load like counts for new patterns
+      const ids = newPatterns.map((p) => p.id);
       if (ids.length > 0) {
         const { data: likes } = await supabase.from("pattern_likes").select("pattern_id").in("pattern_id", ids);
         if (likes) {
           const counts: Record<string, number> = {};
           likes.forEach((l) => { counts[l.pattern_id] = (counts[l.pattern_id] || 0) + 1; });
-          setLikeCounts(counts);
+          setLikeCounts((prev) => ({ ...prev, ...counts }));
         }
       }
+    } else {
+      setHasMore(false);
     }
-    setLoading(false);
+
+    if (initial) setLoading(false);
+    setLoadingMore(false);
   };
+
+  // Infinite scroll observer
+  useEffect(() => {
+    if (!sentinelRef.current || loading) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadPatterns(false);
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, patterns.length]);
 
   const loadUserInteractions = async () => {
     if (!user) return;
@@ -263,104 +302,116 @@ export default function Explore() {
 
         {/* Masonry grid */}
         {!loading && (
-          <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
-            {renderItems.map((item, idx) => {
-              if (item === "cta") return <CTACard key="cta" />;
-              const pattern = item;
-              const isLiked = liked.has(pattern.id);
-              const isBookmarked = bookmarked.has(pattern.id);
+          <>
+            <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
+              {renderItems.map((item, idx) => {
+                if (item === "cta") return <CTACard key="cta" />;
+                const pattern = item;
+                const isLiked = liked.has(pattern.id);
+                const isBookmarked = bookmarked.has(pattern.id);
 
-              return (
-                <Link
-                  key={pattern.id}
-                  to={pattern.isSeed ? "/designer" : `/pattern/${pattern.slug}`}
-                  className="break-inside-avoid mb-4 block group"
-                >
-                  <div className="bg-card rounded-xl border border-border/60 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_-12px_hsl(var(--explore-active)/0.25)]">
-                    {/* Image area */}
-                    <div className="relative bg-muted/30 p-4 flex justify-center">
-                      <div
-                        className="grid gap-px w-full"
-                        style={{
-                          gridTemplateColumns: `repeat(${pattern.grid_cols}, 1fr)`,
-                          maxWidth: 300,
-                          aspectRatio: `${pattern.grid_cols}/${pattern.grid_rows}`,
-                        }}
-                      >
-                        {pattern.grid_data.flat().map((color, i) => (
-                          <span
-                            key={i}
-                            className="rounded-[1px]"
-                            style={{ backgroundColor: color === "transparent" ? "transparent" : color }}
-                          />
-                        ))}
-                      </div>
-
-                      {/* Featured badge */}
-                      {pattern.isSeed && (
-                        <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-explore-active/90 text-white text-[10px] font-bold uppercase tracking-wider shadow-sm">
-                          <Sparkles size={10} /> Staff Pick
-                        </span>
-                      )}
-
-                      {/* Hover actions */}
-                      <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/5 transition-colors duration-300 flex items-start justify-end p-3 gap-2 opacity-0 group-hover:opacity-100">
-                        <button
-                          onClick={(e) => toggleLike(e, pattern.id)}
-                          className={cn(
-                            "w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm transition-all shadow-sm",
-                            isLiked ? "bg-explore-active text-white" : "bg-card/90 text-muted-foreground hover:text-foreground"
-                          )}
+                return (
+                  <Link
+                    key={pattern.id}
+                    to={pattern.isSeed ? "/designer" : `/pattern/${pattern.slug}`}
+                    className="break-inside-avoid mb-4 block group"
+                  >
+                    <div className="bg-card rounded-xl border border-border/60 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_-12px_hsl(var(--explore-active)/0.25)]">
+                      {/* Image area */}
+                      <div className="relative bg-muted/30 p-4 flex justify-center">
+                        <div
+                          className="grid gap-px w-full"
+                          style={{
+                            gridTemplateColumns: `repeat(${pattern.grid_cols}, 1fr)`,
+                            maxWidth: 300,
+                            aspectRatio: `${pattern.grid_cols}/${pattern.grid_rows}`,
+                          }}
                         >
-                          <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
-                        </button>
-                        <button
-                          onClick={(e) => toggleBookmark(e, pattern.id)}
-                          className={cn(
-                            "w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm transition-all shadow-sm",
-                            isBookmarked ? "bg-explore-active text-white" : "bg-card/90 text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          <Bookmark size={16} fill={isBookmarked ? "currentColor" : "none"} />
-                        </button>
-                      </div>
-                    </div>
+                          {pattern.grid_data.flat().map((color, i) => (
+                            <span
+                              key={i}
+                              className="rounded-[1px]"
+                              style={{ backgroundColor: color === "transparent" ? "transparent" : color }}
+                            />
+                          ))}
+                        </div>
 
-                    {/* Card content */}
-                    <div className="p-4 space-y-3">
-                      <h3 className="font-bold text-foreground leading-snug">{pattern.title}</h3>
-
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-semibold text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
-                          {pattern.beadCount.toLocaleString()} beads
-                        </span>
-                        <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full", pattern.difficulty.color)}>
-                          {pattern.difficulty.label}
-                        </span>
-                        {(likeCounts[pattern.id] || 0) > 0 && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1 ml-auto">
-                            <Heart size={12} className="text-explore-active" fill="currentColor" />
-                            {likeCounts[pattern.id]}
+                        {/* Featured badge */}
+                        {pattern.isSeed && (
+                          <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-explore-active/90 text-white text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                            <Sparkles size={10} /> Staff Pick
                           </span>
                         )}
+
+                        {/* Hover actions */}
+                        <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/5 transition-colors duration-300 flex items-start justify-end p-3 gap-2 opacity-0 group-hover:opacity-100">
+                          <button
+                            onClick={(e) => toggleLike(e, pattern.id)}
+                            className={cn(
+                              "w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm transition-all shadow-sm",
+                              isLiked ? "bg-explore-active text-white" : "bg-card/90 text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
+                          </button>
+                          <button
+                            onClick={(e) => toggleBookmark(e, pattern.id)}
+                            className={cn(
+                              "w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm transition-all shadow-sm",
+                              isBookmarked ? "bg-explore-active text-white" : "bg-card/90 text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            <Bookmark size={16} fill={isBookmarked ? "currentColor" : "none"} />
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-2 pt-1 border-t border-border/50">
-                        {pattern.avatarUrl ? (
-                          <img src={pattern.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
-                        ) : (
-                          <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
-                            <User size={12} className="text-muted-foreground" />
+                      {/* Card content */}
+                      <div className="p-4 space-y-3">
+                        <h3 className="font-bold text-foreground leading-snug">{pattern.title}</h3>
+
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-semibold text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
+                            {pattern.beadCount.toLocaleString()} beads
                           </span>
-                        )}
-                        <span className="text-xs text-muted-foreground font-medium truncate">@{pattern.authorName}</span>
+                          <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full", pattern.difficulty.color)}>
+                            {pattern.difficulty.label}
+                          </span>
+                          {(likeCounts[pattern.id] || 0) > 0 && (
+                            <span className="text-xs text-muted-foreground flex items-center gap-1 ml-auto">
+                              <Heart size={12} className="text-explore-active" fill="currentColor" />
+                              {likeCounts[pattern.id]}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+                          {pattern.avatarUrl ? (
+                            <img src={pattern.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
+                          ) : (
+                            <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                              <User size={12} className="text-muted-foreground" />
+                            </span>
+                          )}
+                          <span className="text-xs text-muted-foreground font-medium truncate">@{pattern.authorName}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Infinite scroll sentinel */}
+            <div ref={sentinelRef} className="flex justify-center py-8">
+              {loadingMore && (
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              )}
+              {!hasMore && patterns.length > 0 && (
+                <p className="text-sm text-muted-foreground">You've seen all patterns ✨</p>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>
