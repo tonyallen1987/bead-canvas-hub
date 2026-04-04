@@ -224,7 +224,7 @@ export default function PatternDetail() {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Pattern preview */}
         <div className="flex-1 flex justify-center">
-          <div className="bg-muted/30 rounded-2xl border p-6 inline-block">
+          <div className="bg-muted/30 rounded-2xl border p-6 inline-block" role="img" aria-label={patternImageAlt}>
             <div
               className="grid gap-px"
               style={{

@@ -389,7 +389,7 @@ export default function Explore() {
 
                         <div className="flex items-center gap-2 pt-1 border-t border-border/50">
                           {pattern.avatarUrl ? (
-                            <img src={pattern.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
+                            <img src={pattern.avatarUrl} alt={`${pattern.authorName} avatar`} className="w-6 h-6 rounded-full object-cover" />
                           ) : (
                             <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
                               <User size={12} className="text-muted-foreground" />
