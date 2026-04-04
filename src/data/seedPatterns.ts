@@ -27,6 +27,8 @@ function g(rows: string[][], cols: number): string[][] {
   });
 }
 
+export type ExploreCategory = "Animals" | "Food" | "Games" | "Nature" | "Sports" | "Holidays" | "Letters" | "Abstract";
+
 export interface SeedPattern {
   id: string;
   title: string;
@@ -38,6 +40,8 @@ export interface SeedPattern {
   difficulty: "Easy" | "Medium";
   author: string;
   isSeed: true;
+  category: ExploreCategory;
+  tags: string[];
 }
 
 // ── 1. Classic Red Heart (11×10) ────────────────────────────
