@@ -1,3 +1,19 @@
+User-agent: Googlebot
+Allow: /
+Disallow: /admin-import
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin-import
+
+User-agent: Twitterbot
+Allow: /
+Disallow: /admin-import
+
+User-agent: facebookexternalhit
+Allow: /
+Disallow: /admin-import
+
 User-agent: *
 Allow: /
 Disallow: /admin-import
