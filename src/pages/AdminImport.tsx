@@ -6,7 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Upload, X, ImageIcon, Loader2, CheckCircle2, XCircle, ShieldAlert, Eye } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Upload, X, ImageIcon, Loader2, CheckCircle2, XCircle, ShieldAlert, Eye, Tag } from "lucide-react";
+import { toast } from "sonner";
+import type { ExploreCategory } from "@/data/seedPatterns";
+
+const IMPORT_CATEGORIES: ExploreCategory[] = ["Animals", "Food", "Games", "Nature", "Sports", "Holidays", "Letters", "Abstract"];
 import { toast } from "sonner";
 
 // --- Perler palette for client-side preview ---
