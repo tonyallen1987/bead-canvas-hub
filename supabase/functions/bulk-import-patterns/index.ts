@@ -175,8 +175,9 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { images } = await req.json() as {
+    const { images, category: requestCategory } = await req.json() as {
       images: { filename: string; base64: string }[];
+      category?: string;
     };
 
     if (!images || !Array.isArray(images) || images.length === 0) {
@@ -224,7 +225,7 @@ Deno.serve(async (req) => {
         const title = titleFromFilename(img.filename);
         const uniqueColors = paletteSet.size;
         const difficulty = uniqueColors <= 5 ? "Easy" : uniqueColors <= 12 ? "Medium" : "Hard";
-        const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
+        const category = requestCategory || CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
 
         const { error: insertError } = await adminClient.from("perler_patterns").insert({
           title,

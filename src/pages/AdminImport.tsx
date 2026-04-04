@@ -6,8 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Upload, X, ImageIcon, Loader2, CheckCircle2, XCircle, ShieldAlert, Eye } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Upload, X, ImageIcon, Loader2, CheckCircle2, XCircle, ShieldAlert, Eye, Tag } from "lucide-react";
 import { toast } from "sonner";
+import type { ExploreCategory } from "@/data/seedPatterns";
+
+const IMPORT_CATEGORIES: ExploreCategory[] = ["Animals", "Food", "Games", "Nature", "Sports", "Holidays", "Letters", "Abstract"];
 
 // --- Perler palette for client-side preview ---
 const PERLER_COLORS = [
@@ -132,6 +136,7 @@ export default function AdminImport() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<ExploreCategory | "">("");
 
   useEffect(() => {
     if (!checking && !user) navigate("/auth");
@@ -223,7 +228,7 @@ export default function AdminImport() {
       try {
         const { data, error } = await supabase.functions.invoke(
           "bulk-import-patterns",
-          { body: { images } }
+          { body: { images, category: selectedCategory || undefined } }
         );
 
         if (error) {
@@ -306,6 +311,22 @@ export default function AdminImport() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Category selector */}
+            <div className="flex items-center gap-3">
+              <Tag size={16} className="text-muted-foreground" />
+              <label className="text-sm font-medium">Category for imported patterns:</label>
+              <Select value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as ExploreCategory)}>
+                <SelectTrigger className="w-[180px] h-9 text-sm">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {IMPORT_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Drop zone */}
             <div
               onDragOver={(e) => {
