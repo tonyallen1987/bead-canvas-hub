@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import type { ExploreCategory } from "@/data/seedPatterns";
 
 const IMPORT_CATEGORIES: ExploreCategory[] = ["Animals", "Food", "Games", "Nature", "Sports", "Holidays", "Letters", "Abstract"];
-import { toast } from "sonner";
 
 // --- Perler palette for client-side preview ---
 const PERLER_COLORS = [
