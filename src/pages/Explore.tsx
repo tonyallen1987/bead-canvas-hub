@@ -1,11 +1,15 @@
 import PageMeta from "@/components/PageMeta";
-import { Heart, Bookmark, TrendingUp, Clock, User, Sparkles, Camera, Loader2 } from "lucide-react";
+import { Heart, Bookmark, TrendingUp, Clock, User, Sparkles, Camera, Loader2, ArrowUpDown, Filter } from "lucide-react";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { seedPatterns, type SeedPattern } from "@/data/seedPatterns";
+import { seedPatterns, type SeedPattern, type ExploreCategory } from "@/data/seedPatterns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+
+const EXPLORE_CATEGORIES: ExploreCategory[] = ["Animals", "Food", "Games", "Nature", "Sports", "Holidays", "Letters", "Abstract"];
 
 interface PatternRow {
   id: string;
@@ -15,6 +19,9 @@ interface PatternRow {
   grid_rows: number;
   grid_cols: number;
   created_at: string;
+  category: string | null;
+  tags: string[] | null;
+  difficulty: string | null;
   profiles: { username: string | null; display_name: string | null; avatar_url: string | null } | null;
 }
 
@@ -31,9 +38,11 @@ type DisplayPattern = {
   isSeed: boolean;
   difficulty: { label: string; color: string };
   beadCount: number;
+  category: string | null;
+  tags: string[];
 };
 
-type SortMode = "recent" | "liked";
+type SortMode = "recent" | "popular" | "easiest";
 
 const PAGE_SIZE = 20;
 
@@ -45,6 +54,12 @@ function getDifficulty(beadCount: number, cols: number): { label: string; color:
   if (beadCount <= 150 || cols <= 12) return { label: "Easy", color: "bg-explore-easy text-white" };
   if (beadCount <= 500 || cols <= 24) return { label: "Medium", color: "bg-explore-medium text-white" };
   return { label: "Hard", color: "bg-explore-hard text-white" };
+}
+
+function difficultyOrder(label: string): number {
+  if (label === "Easy") return 0;
+  if (label === "Medium") return 1;
+  return 2;
 }
 
 function SkeletonCard() {
@@ -68,10 +83,7 @@ function SkeletonCard() {
 
 function CTACard() {
   return (
-    <Link
-      to="/designer?import=true"
-      className="break-inside-avoid mb-4 block group"
-    >
+    <Link to="/designer?import=true" className="break-inside-avoid mb-4 block group">
       <div className="bg-gradient-to-br from-explore-active/10 via-explore-easy/10 to-explore-medium/10 rounded-xl border-2 border-dashed border-explore-active/40 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_-12px_hsl(var(--explore-active)/0.3)] hover:border-explore-active/70 p-8 flex flex-col items-center justify-center text-center min-h-[260px] gap-4">
         <div className="w-14 h-14 rounded-2xl bg-explore-active/15 flex items-center justify-center">
           <Camera size={28} className="text-explore-active" />
@@ -97,6 +109,7 @@ export default function Explore() {
   const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [sort, setSort] = useState<SortMode>("recent");
+  const [activeCategory, setActiveCategory] = useState<ExploreCategory | "All">("All");
   const { user } = useAuth();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -117,7 +130,7 @@ export default function Explore() {
 
     const { data } = await supabase
       .from("perler_patterns")
-      .select("id, title, slug, grid_data, grid_rows, grid_cols, created_at, profiles!perler_patterns_user_id_fkey(username, display_name, avatar_url)")
+      .select("id, title, slug, grid_data, grid_rows, grid_cols, created_at, category, tags, difficulty, profiles!perler_patterns_user_id_fkey(username, display_name, avatar_url)")
       .eq("is_public", true)
       .order("created_at", { ascending: false })
       .range(from, to);
@@ -127,7 +140,6 @@ export default function Explore() {
       setPatterns((prev) => initial ? newPatterns : [...prev, ...newPatterns]);
       if (newPatterns.length < PAGE_SIZE) setHasMore(false);
 
-      // Load like counts for new patterns
       const ids = newPatterns.map((p) => p.id);
       if (ids.length > 0) {
         const { data: likes } = await supabase.from("pattern_likes").select("pattern_id").in("pattern_id", ids);
@@ -145,7 +157,6 @@ export default function Explore() {
     setLoadingMore(false);
   };
 
-  // Infinite scroll observer
   useEffect(() => {
     if (!sentinelRef.current || loading) return;
     const observer = new IntersectionObserver(
@@ -200,10 +211,11 @@ export default function Explore() {
   };
 
   // Merge DB patterns with seed patterns
-  const displayPatterns: DisplayPattern[] = useMemo(() => {
+  const allPatterns: DisplayPattern[] = useMemo(() => {
     const dbItems: DisplayPattern[] = patterns.map((p) => {
       const grid = p.grid_data as unknown as string[][];
       const beadCount = getBeadCount(grid);
+      const diffLabel = p.difficulty || getDifficulty(beadCount, p.grid_cols).label;
       return {
         id: p.id,
         title: p.title,
@@ -217,6 +229,8 @@ export default function Explore() {
         isSeed: false,
         difficulty: getDifficulty(beadCount, p.grid_cols),
         beadCount,
+        category: p.category || null,
+        tags: p.tags || [],
       };
     });
 
@@ -237,18 +251,38 @@ export default function Explore() {
           ? { label: "Easy", color: "bg-explore-easy text-white" }
           : { label: "Medium", color: "bg-explore-medium text-white" },
         beadCount,
+        category: s.category,
+        tags: s.tags,
       };
     });
 
-    const all = [...dbItems, ...seeds];
+    return [...dbItems, ...seeds];
+  }, [patterns]);
 
-    all.sort((a, b) => {
-      if (sort === "liked") return (likeCounts[b.id] || 0) - (likeCounts[a.id] || 0);
+  // Category counts (before filtering)
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allPatterns.forEach((p) => {
+      if (p.category) counts[p.category] = (counts[p.category] || 0) + 1;
+    });
+    return counts;
+  }, [allPatterns]);
+
+  // Filter and sort
+  const displayPatterns = useMemo(() => {
+    let filtered = allPatterns;
+    if (activeCategory !== "All") {
+      filtered = filtered.filter((p) => p.category === activeCategory);
+    }
+
+    filtered.sort((a, b) => {
+      if (sort === "popular") return (likeCounts[b.id] || 0) - (likeCounts[a.id] || 0);
+      if (sort === "easiest") return difficultyOrder(a.difficulty.label) - difficultyOrder(b.difficulty.label);
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
 
-    return all;
-  }, [patterns, sort, likeCounts]);
+    return filtered;
+  }, [allPatterns, activeCategory, sort, likeCounts]);
 
   // Insert CTA card at position 3
   const renderItems = useMemo(() => {
@@ -261,35 +295,63 @@ export default function Explore() {
     return items;
   }, [displayPatterns]);
 
+  const totalCount = activeCategory === "All" ? allPatterns.length : displayPatterns.length;
+
   return (
     <div className="min-h-screen grid-pattern">
       <PageMeta title="Explore Perler Bead Patterns – Perlerly" description="Browse hundreds of pixel art Perler bead patterns shared by the community. Find patterns by difficulty, category, and bead count." />
       <div className="container py-10">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
-          <div>
-            <h1 className="text-4xl font-extrabold tracking-tight">Explore</h1>
-            <p className="text-muted-foreground mt-1.5 text-base">Discover bead creations from the community</p>
+        <div className="flex flex-col gap-6 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <h1 className="text-4xl font-extrabold tracking-tight">Explore</h1>
+              <p className="text-muted-foreground mt-1.5 text-base">
+                Discover bead creations from the community · <span className="font-semibold text-foreground">{totalCount}</span> patterns
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Select value={sort} onValueChange={(v) => setSort(v as SortMode)}>
+                <SelectTrigger className="w-[160px] h-9 text-sm">
+                  <ArrowUpDown size={14} className="mr-1.5 text-muted-foreground" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Newest</SelectItem>
+                  <SelectItem value="popular">Most Popular</SelectItem>
+                  <SelectItem value="easiest">Easiest First</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="flex gap-1.5 bg-card border rounded-xl p-1">
+
+          {/* Category pills */}
+          <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => setSort("recent")}
+              onClick={() => setActiveCategory("All")}
               className={cn(
-                "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all",
-                sort === "recent" ? "bg-explore-active text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+                "px-4 py-1.5 rounded-full text-sm font-semibold transition-all border",
+                activeCategory === "All"
+                  ? "bg-explore-active text-white border-explore-active shadow-sm"
+                  : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-foreground/30"
               )}
             >
-              <Clock size={14} /> Recent
+              All <span className="ml-1 opacity-70">{allPatterns.length}</span>
             </button>
-            <button
-              onClick={() => setSort("liked")}
-              className={cn(
-                "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all",
-                sort === "liked" ? "bg-explore-active text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <TrendingUp size={14} /> Popular
-            </button>
+            {EXPLORE_CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-sm font-semibold transition-all border",
+                  activeCategory === cat
+                    ? "bg-explore-active text-white border-explore-active shadow-sm"
+                    : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-foreground/30"
+                )}
+              >
+                {cat} {categoryCounts[cat] ? <span className="ml-1 opacity-70">{categoryCounts[cat]}</span> : null}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -302,8 +364,17 @@ export default function Explore() {
           </div>
         )}
 
+        {/* Empty state */}
+        {!loading && displayPatterns.length === 0 && (
+          <div className="text-center py-20">
+            <Filter size={40} className="mx-auto text-muted-foreground/40 mb-4" />
+            <h3 className="text-lg font-bold text-foreground">No patterns found</h3>
+            <p className="text-muted-foreground mt-1">Try a different category or sort option</p>
+          </div>
+        )}
+
         {/* Masonry grid */}
-        {!loading && (
+        {!loading && displayPatterns.length > 0 && (
           <>
             <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
               {renderItems.map((item, idx) => {
@@ -373,6 +444,11 @@ export default function Explore() {
                         <h3 className="font-bold text-foreground leading-snug">{pattern.title}</h3>
 
                         <div className="flex items-center gap-2 flex-wrap">
+                          {pattern.category && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary uppercase tracking-wider">
+                              {pattern.category}
+                            </span>
+                          )}
                           <span className="text-xs font-semibold text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
                             {pattern.beadCount.toLocaleString()} beads
                           </span>
@@ -386,6 +462,17 @@ export default function Explore() {
                             </span>
                           )}
                         </div>
+
+                        {/* Tags */}
+                        {pattern.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {pattern.tags.slice(0, 3).map((tag) => (
+                              <span key={tag} className="text-[10px] text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
 
                         <div className="flex items-center gap-2 pt-1 border-t border-border/50">
                           {pattern.avatarUrl ? (
