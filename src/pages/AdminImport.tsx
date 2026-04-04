@@ -228,7 +228,7 @@ export default function AdminImport() {
       try {
         const { data, error } = await supabase.functions.invoke(
           "bulk-import-patterns",
-          { body: { images } }
+          { body: { images, category: selectedCategory || undefined } }
         );
 
         if (error) {
