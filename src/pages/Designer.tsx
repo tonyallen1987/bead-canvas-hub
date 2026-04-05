@@ -202,7 +202,7 @@ export default function Designer() {
                         {group.colors.map((p) => (
                           <button
                             key={p.id}
-                            title={p.name}
+                            title={`${p.name} (${p.code})`}
                             onClick={() => { setColor(p.hex); setIsEraser(false); }}
                             className={cn(
                               "w-7 h-7 rounded-lg bead-dot transition-transform hover:scale-110",
