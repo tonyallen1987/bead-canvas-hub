@@ -239,6 +239,8 @@ export default function Designer() {
 
           <ImportFromImage onImport={handleImageImport} />
 
+          <ShoppingList grid={grid} onSwapColor={(hex) => setSwapHex(hex)} />
+
           <button
             onClick={exportPNG}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-border font-bold text-sm hover:bg-muted transition-colors"
@@ -276,6 +278,13 @@ export default function Designer() {
           </div>
         </div>
       </div>
+
+      <ColorSwapDialog
+        open={!!swapHex}
+        fromHex={swapHex}
+        onClose={() => setSwapHex(null)}
+        onSwap={handleSwapColor}
+      />
     </div>
   );
 }
