@@ -1,9 +1,12 @@
 import PageMeta from "@/components/PageMeta";
-import { useState, useCallback } from "react";
-import { Eraser, Download, Trash2, Plus, Minus, Save, Share2 } from "lucide-react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { Save, Share2 } from "lucide-react";
 import ImportFromImage from "@/components/designer/ImportFromImage";
 import ShoppingList from "@/components/designer/ShoppingList";
 import ColorSwapDialog from "@/components/designer/ColorSwapDialog";
+import GridControls from "@/components/designer/GridControls";
+import ToolBar, { type ToolMode } from "@/components/designer/ToolBar";
+import ExportOptions from "@/components/designer/ExportOptions";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,31 +16,88 @@ import { COLOR_GROUPS, PERLER_COLOR_MAP } from "@/data/perlerColors";
 
 const EMPTY = "transparent";
 const DEFAULT_SIZE = 16;
+const MAX_UNDO = 50;
+
+function makeGrid(size: number) {
+  return Array.from({ length: size }, () => Array(size).fill(EMPTY));
+}
 
 export default function Designer() {
   const [size, setSize] = useState(DEFAULT_SIZE);
-  const [grid, setGrid] = useState<string[][]>(() =>
-    Array.from({ length: DEFAULT_SIZE }, () => Array(DEFAULT_SIZE).fill(EMPTY))
-  );
+  const [grid, setGrid] = useState<string[][]>(() => makeGrid(DEFAULT_SIZE));
   const [color, setColor] = useState(COLOR_GROUPS[0].colors[0].hex);
-  const [isEraser, setIsEraser] = useState(false);
+  const [tool, setTool] = useState<ToolMode>("paint");
   const [painting, setPainting] = useState(false);
   const [title, setTitle] = useState("");
   const [saving, setSaving] = useState(false);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(COLOR_GROUPS[0].label);
   const [swapHex, setSwapHex] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+
+  // Undo/redo
+  const undoStack = useRef<string[][][]>([]);
+  const redoStack = useRef<string[][][]>([]);
+  const [undoLen, setUndoLen] = useState(0);
+  const [redoLen, setRedoLen] = useState(0);
+
+  const pushUndo = useCallback((g: string[][]) => {
+    undoStack.current.push(g.map((r) => [...r]));
+    if (undoStack.current.length > MAX_UNDO) undoStack.current.shift();
+    redoStack.current = [];
+    setUndoLen(undoStack.current.length);
+    setRedoLen(0);
+  }, []);
+
+  const undo = useCallback(() => {
+    if (undoStack.current.length === 0) return;
+    redoStack.current.push(grid.map((r) => [...r]));
+    const prev = undoStack.current.pop()!;
+    setGrid(prev);
+    setSize(prev.length);
+    setUndoLen(undoStack.current.length);
+    setRedoLen(redoStack.current.length);
+  }, [grid]);
+
+  const redo = useCallback(() => {
+    if (redoStack.current.length === 0) return;
+    undoStack.current.push(grid.map((r) => [...r]));
+    const next = redoStack.current.pop()!;
+    setGrid(next);
+    setSize(next.length);
+    setUndoLen(undoStack.current.length);
+    setRedoLen(redoStack.current.length);
+  }, [grid]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+      if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) { e.preventDefault(); redo(); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [undo, redo]);
+
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const beadCount = useMemo(() => {
+    let count = 0;
+    for (const row of grid) for (const cell of row) if (cell !== EMPTY) count++;
+    return count;
+  }, [grid]);
+
   const handleSwapColor = (fromHex: string, toHex: string) => {
+    pushUndo(grid);
     setGrid((prev) =>
       prev.map((row) => row.map((cell) => (cell === fromHex ? toHex : cell)))
     );
   };
 
   const resizeGrid = (newSize: number) => {
-    const clamped = Math.max(4, Math.min(48, newSize));
+    const clamped = Math.max(4, Math.min(64, newSize));
+    pushUndo(grid);
     setSize(clamped);
     setGrid(
       Array.from({ length: clamped }, (_, r) =>
@@ -48,23 +108,53 @@ export default function Designer() {
     );
   };
 
+  const floodFill = useCallback((r: number, c: number, targetColor: string, replaceColor: string, g: string[][]) => {
+    if (targetColor === replaceColor) return g;
+    const rows = g.length;
+    const cols = g[0].length;
+    const filled = g.map((row) => [...row]);
+    const stack: [number, number][] = [[r, c]];
+    while (stack.length > 0) {
+      const [cr, cc] = stack.pop()!;
+      if (cr < 0 || cr >= rows || cc < 0 || cc >= cols) continue;
+      if (filled[cr][cc] !== targetColor) continue;
+      filled[cr][cc] = replaceColor;
+      stack.push([cr - 1, cc], [cr + 1, cc], [cr, cc - 1], [cr, cc + 1]);
+    }
+    return filled;
+  }, []);
+
   const paint = useCallback(
-    (r: number, c: number) => {
+    (r: number, c: number, isFirst: boolean) => {
+      if (tool === "fill" && isFirst) {
+        setGrid((prev) => {
+          pushUndo(prev);
+          const target = prev[r][c];
+          return floodFill(r, c, target, color, prev);
+        });
+        return;
+      }
+
+      if (isFirst) pushUndo(grid);
+
       setGrid((prev) => {
         const next = prev.map((row) => [...row]);
-        next[r][c] = isEraser ? EMPTY : color;
+        next[r][c] = tool === "eraser" ? EMPTY : color;
         return next;
       });
     },
-    [color, isEraser]
+    [color, tool, pushUndo, floodFill, grid]
   );
 
-  const clearGrid = () =>
-    setGrid(Array.from({ length: size }, () => Array(size).fill(EMPTY)));
+  const clearGrid = () => {
+    pushUndo(grid);
+    setGrid(makeGrid(size));
+  };
 
   const handleImageImport = (importedGrid: string[][], rows: number, cols: number) => {
-    setSize(Math.max(rows, cols));
+    pushUndo(grid);
     const maxDim = Math.max(rows, cols);
+    setSize(maxDim);
     const padded = Array.from({ length: maxDim }, (_, r) =>
       Array.from({ length: maxDim }, (_, c) =>
         r < rows && c < cols ? importedGrid[r][c] : EMPTY
@@ -73,37 +163,9 @@ export default function Designer() {
     setGrid(padded);
   };
 
-  const exportPNG = () => {
-    const scale = 20;
-    const canvas = document.createElement("canvas");
-    canvas.width = size * scale;
-    canvas.height = size * scale;
-    const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    grid.forEach((row, r) =>
-      row.forEach((cell, c) => {
-        if (cell !== EMPTY) {
-          ctx.fillStyle = cell;
-          ctx.fillRect(c * scale, r * scale, scale, scale);
-        }
-      })
-    );
-    const a = document.createElement("a");
-    a.href = canvas.toDataURL("image/png");
-    a.download = "perlerly-pattern.png";
-    a.click();
-  };
-
   const savePattern = async (isPublic: boolean) => {
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-    if (!title.trim()) {
-      toast({ title: "Please enter a title", variant: "destructive" });
-      return;
-    }
+    if (!user) { navigate("/auth"); return; }
+    if (!title.trim()) { toast({ title: "Please enter a title", variant: "destructive" }); return; }
     setSaving(true);
     const { error } = await supabase.from("perler_patterns").insert({
       user_id: user.id,
@@ -121,7 +183,8 @@ export default function Designer() {
     }
   };
 
-  const cellSize = Math.min(Math.floor(560 / size), 40);
+  const baseCell = Math.min(Math.floor(560 / size), 40);
+  const cellSize = Math.max(Math.round(baseCell * zoom), 4);
 
   return (
     <div className="container py-8">
@@ -130,7 +193,8 @@ export default function Designer() {
       <p className="text-muted-foreground mb-6">Draw your bead pattern on the grid</p>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        <div className="flex-1 flex justify-center">
+        {/* Grid canvas */}
+        <div className="flex-1 flex justify-center overflow-auto">
           <div
             className="grid bg-muted/40 border rounded-xl p-2 select-none touch-none"
             style={{
@@ -146,39 +210,28 @@ export default function Designer() {
                   key={`${r}-${c}`}
                   className={cn(
                     "rounded-[2px] cursor-pointer transition-colors duration-75 hover:opacity-80",
-                    cell === EMPTY && "bg-card border border-border/50"
+                    cell === EMPTY && "bg-card border border-border/50",
+                    tool === "fill" && "cursor-crosshair"
                   )}
                   style={cell !== EMPTY ? { backgroundColor: cell } : undefined}
-                  onMouseDown={() => { setPainting(true); paint(r, c); }}
+                  onMouseDown={() => { setPainting(true); paint(r, c, true); }}
                   onMouseUp={() => setPainting(false)}
-                  onMouseEnter={() => painting && paint(r, c)}
-                  onTouchStart={(e) => { e.preventDefault(); paint(r, c); }}
+                  onMouseEnter={() => painting && tool !== "fill" && paint(r, c, false)}
+                  onTouchStart={(e) => { e.preventDefault(); paint(r, c, true); }}
                 />
               ))
             )}
           </div>
         </div>
 
-        <div className="lg:w-72 space-y-5">
-          <div>
-            <label className="text-sm font-semibold mb-2 block">Grid Size: {size} × {size}</label>
-            <div className="flex items-center gap-2">
-              <button onClick={() => resizeGrid(size - 2)} className="p-2 rounded-lg border hover:bg-muted">
-                <Minus size={16} />
-              </button>
-              <div className="flex-1 h-2 bg-muted rounded-full relative">
-                <div className="absolute h-full bg-primary rounded-full" style={{ width: `${((size - 4) / 44) * 100}%` }} />
-              </div>
-              <button onClick={() => resizeGrid(size + 2)} className="p-2 rounded-lg border hover:bg-muted">
-                <Plus size={16} />
-              </button>
-            </div>
-          </div>
+        {/* Sidebar */}
+        <div className="lg:w-72 space-y-4">
+          <GridControls size={size} beadCount={beadCount} onResize={resizeGrid} />
 
-          {/* Grouped Palette */}
+          {/* Palette */}
           <div>
             <label className="text-sm font-semibold mb-2 block">Palette</label>
-            <div className="space-y-1 max-h-[280px] overflow-y-auto pr-1">
+            <div className="space-y-1 max-h-[240px] overflow-y-auto pr-1">
               {COLOR_GROUPS.map((group) => {
                 const isOpen = expandedGroup === group.label;
                 return (
@@ -203,10 +256,10 @@ export default function Designer() {
                           <button
                             key={p.id}
                             title={`${p.name} (${p.code})`}
-                            onClick={() => { setColor(p.hex); setIsEraser(false); }}
+                            onClick={() => { setColor(p.hex); setTool("paint"); }}
                             className={cn(
                               "w-7 h-7 rounded-lg bead-dot transition-transform hover:scale-110",
-                              color === p.hex && !isEraser && "ring-2 ring-foreground ring-offset-1 scale-110"
+                              color === p.hex && tool === "paint" && "ring-2 ring-foreground ring-offset-1 scale-110"
                             )}
                             style={{ backgroundColor: p.hex }}
                           />
@@ -219,7 +272,7 @@ export default function Designer() {
             </div>
           </div>
 
-          {!isEraser && PERLER_COLOR_MAP.get(color) && (
+          {tool === "paint" && PERLER_COLOR_MAP.get(color) && (
             <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-muted/50 border text-xs">
               <span className="w-4 h-4 rounded shrink-0" style={{ backgroundColor: color }} />
               <span className="font-semibold">{PERLER_COLOR_MAP.get(color)!.name}</span>
@@ -227,35 +280,26 @@ export default function Designer() {
             </div>
           )}
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => setIsEraser(!isEraser)}
-              className={cn(
-                "flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm font-semibold transition-colors",
-                isEraser && "bg-primary text-primary-foreground border-primary"
-              )}
-            >
-              <Eraser size={16} /> Eraser
-            </button>
-            <button
-              onClick={clearGrid}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm font-semibold hover:bg-destructive hover:text-primary-foreground transition-colors"
-            >
-              <Trash2 size={16} /> Clear
-            </button>
-          </div>
+          <ToolBar
+            tool={tool}
+            onToolChange={setTool}
+            onClear={clearGrid}
+            onUndo={undo}
+            onRedo={redo}
+            canUndo={undoLen > 0}
+            canRedo={redoLen > 0}
+            zoom={zoom}
+            onZoomIn={() => setZoom((z) => Math.min(z + 0.25, 3))}
+            onZoomOut={() => setZoom((z) => Math.max(z - 0.25, 0.25))}
+          />
 
           <ImportFromImage onImport={handleImageImport} />
 
           <ShoppingList grid={grid} onSwapColor={(hex) => setSwapHex(hex)} />
 
-          <button
-            onClick={exportPNG}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-border font-bold text-sm hover:bg-muted transition-colors"
-          >
-            <Download size={16} /> Export PNG
-          </button>
+          <ExportOptions grid={grid} size={size} title={title} isPaid={!!user} />
 
+          {/* Save / Share */}
           <div className="border-t pt-4 space-y-3">
             <input
               type="text"
