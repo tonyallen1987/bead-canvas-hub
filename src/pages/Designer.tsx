@@ -2,12 +2,14 @@ import PageMeta from "@/components/PageMeta";
 import { useState, useCallback } from "react";
 import { Eraser, Download, Trash2, Plus, Minus, Save, Share2 } from "lucide-react";
 import ImportFromImage from "@/components/designer/ImportFromImage";
+import ShoppingList from "@/components/designer/ShoppingList";
+import ColorSwapDialog from "@/components/designer/ColorSwapDialog";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { COLOR_GROUPS } from "@/data/perlerColors";
+import { COLOR_GROUPS, PERLER_COLOR_MAP } from "@/data/perlerColors";
 
 const EMPTY = "transparent";
 const DEFAULT_SIZE = 16;
@@ -23,9 +25,16 @@ export default function Designer() {
   const [title, setTitle] = useState("");
   const [saving, setSaving] = useState(false);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(COLOR_GROUPS[0].label);
+  const [swapHex, setSwapHex] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const handleSwapColor = (fromHex: string, toHex: string) => {
+    setGrid((prev) =>
+      prev.map((row) => row.map((cell) => (cell === fromHex ? toHex : cell)))
+    );
+  };
 
   const resizeGrid = (newSize: number) => {
     const clamped = Math.max(4, Math.min(48, newSize));
@@ -193,7 +202,7 @@ export default function Designer() {
                         {group.colors.map((p) => (
                           <button
                             key={p.id}
-                            title={p.name}
+                            title={`${p.name} (${p.code})`}
                             onClick={() => { setColor(p.hex); setIsEraser(false); }}
                             className={cn(
                               "w-7 h-7 rounded-lg bead-dot transition-transform hover:scale-110",
@@ -209,6 +218,14 @@ export default function Designer() {
               })}
             </div>
           </div>
+
+          {!isEraser && PERLER_COLOR_MAP.get(color) && (
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-muted/50 border text-xs">
+              <span className="w-4 h-4 rounded shrink-0" style={{ backgroundColor: color }} />
+              <span className="font-semibold">{PERLER_COLOR_MAP.get(color)!.name}</span>
+              <span className="text-muted-foreground">{PERLER_COLOR_MAP.get(color)!.code}</span>
+            </div>
+          )}
 
           <div className="flex gap-2">
             <button
@@ -229,6 +246,8 @@ export default function Designer() {
           </div>
 
           <ImportFromImage onImport={handleImageImport} />
+
+          <ShoppingList grid={grid} onSwapColor={(hex) => setSwapHex(hex)} />
 
           <button
             onClick={exportPNG}
@@ -267,6 +286,13 @@ export default function Designer() {
           </div>
         </div>
       </div>
+
+      <ColorSwapDialog
+        open={!!swapHex}
+        fromHex={swapHex}
+        onClose={() => setSwapHex(null)}
+        onSwap={handleSwapColor}
+      />
     </div>
   );
 }
