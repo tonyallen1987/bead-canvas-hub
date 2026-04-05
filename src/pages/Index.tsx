@@ -1,8 +1,7 @@
 import { Link } from "react-router-dom";
-import { Compass, PenTool, Grid3X3, Calculator, ArrowRight, ChevronDown } from "lucide-react";
+import { Compass, PenTool, Grid3X3, Calculator, ArrowRight } from "lucide-react";
 import BeadDecoration from "@/components/BeadDecoration";
 import PageMeta from "@/components/PageMeta";
-import { useState } from "react";
 
 const features = [
   {
@@ -34,59 +33,6 @@ const features = [
     color: "bg-bead-lemon",
   },
 ];
-
-const featureDetails = [
-  {
-    title: "Pattern Designer",
-    desc: "Upload an image and convert it into a pixel art Perler bead pattern instantly. Supports PNG format with automatic color mapping and grid sizing.",
-  },
-  {
-    title: "Explore Community Patterns",
-    desc: "Browse hundreds of free Perler bead patterns organized by difficulty (Easy, Medium, Hard), category, and bead count.",
-  },
-  {
-    title: "Bead Counter",
-    desc: "Count your beads by color before starting a project. Never run out mid-pattern again.",
-  },
-];
-
-const faqs = [
-  {
-    q: "Is Perlerly free to use?",
-    a: "Yes, Perlerly is completely free. Create an account to save and share your patterns.",
-  },
-  {
-    q: "What image formats can I upload?",
-    a: "Currently PNG images are supported. Upload any PNG and the designer will convert it into a Perler bead pattern automatically.",
-  },
-  {
-    q: "What grid sizes are supported?",
-    a: "The designer supports common grid sizes including 16×16, 32×32, and larger custom sizes.",
-  },
-];
-
-function FAQItem({ q, a }: { q: string; a: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="border-b border-border/60 last:border-0">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-5 text-left"
-      >
-        <span className="font-semibold text-foreground">{q}</span>
-        <ChevronDown
-          size={18}
-          className={`text-muted-foreground shrink-0 ml-4 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      {open && (
-        <p className="pb-5 text-muted-foreground text-sm leading-relaxed -mt-1">
-          {a}
-        </p>
-      )}
-    </div>
-  );
-}
 
 export default function Index() {
   return (
