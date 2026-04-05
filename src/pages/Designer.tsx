@@ -2,12 +2,14 @@ import PageMeta from "@/components/PageMeta";
 import { useState, useCallback } from "react";
 import { Eraser, Download, Trash2, Plus, Minus, Save, Share2 } from "lucide-react";
 import ImportFromImage from "@/components/designer/ImportFromImage";
+import ShoppingList from "@/components/designer/ShoppingList";
+import ColorSwapDialog from "@/components/designer/ColorSwapDialog";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { COLOR_GROUPS } from "@/data/perlerColors";
+import { COLOR_GROUPS, PERLER_COLOR_MAP } from "@/data/perlerColors";
 
 const EMPTY = "transparent";
 const DEFAULT_SIZE = 16;
