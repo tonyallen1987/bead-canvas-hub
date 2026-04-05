@@ -219,6 +219,14 @@ export default function Designer() {
             </div>
           </div>
 
+          {!isEraser && PERLER_COLOR_MAP.get(color) && (
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-muted/50 border text-xs">
+              <span className="w-4 h-4 rounded shrink-0" style={{ backgroundColor: color }} />
+              <span className="font-semibold">{PERLER_COLOR_MAP.get(color)!.name}</span>
+              <span className="text-muted-foreground">{PERLER_COLOR_MAP.get(color)!.code}</span>
+            </div>
+          )}
+
           <div className="flex gap-2">
             <button
               onClick={() => setIsEraser(!isEraser)}
