@@ -25,9 +25,16 @@ export default function Designer() {
   const [title, setTitle] = useState("");
   const [saving, setSaving] = useState(false);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(COLOR_GROUPS[0].label);
+  const [swapHex, setSwapHex] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const handleSwapColor = (fromHex: string, toHex: string) => {
+    setGrid((prev) =>
+      prev.map((row) => row.map((cell) => (cell === fromHex ? toHex : cell)))
+    );
+  };
 
   const resizeGrid = (newSize: number) => {
     const clamped = Math.max(4, Math.min(48, newSize));
