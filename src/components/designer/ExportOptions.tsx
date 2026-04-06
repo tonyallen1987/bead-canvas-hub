@@ -54,7 +54,7 @@ function getBeadCounts(grid: string[][]) {
     .sort((a, b) => b.count - a.count);
 }
 
-function exportPNGWithGrid(grid: string[][], size: number) {
+function exportPNGWithGrid(grid: string[][], size: number, title: string) {
   const scale = 20;
   const canvas = document.createElement("canvas");
   canvas.width = size * scale;
@@ -86,10 +86,16 @@ function exportPNGWithGrid(grid: string[][], size: number) {
     ctx.stroke();
   }
 
-  const a = document.createElement("a");
-  a.href = canvas.toDataURL("image/png");
-  a.download = "perlerly-pattern.png";
-  a.click();
+  addWatermark(ctx, canvas.width, canvas.height);
+
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${slugify(title)}-perlerly.png`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }, "image/png");
 }
 
 function exportCSV(grid: string[][]) {
