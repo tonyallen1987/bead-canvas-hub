@@ -3,6 +3,38 @@ import { PERLER_COLOR_MAP } from "@/data/perlerColors";
 
 const EMPTY = "transparent";
 
+function slugify(text: string): string {
+  return text.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-pattern";
+}
+
+function addWatermark(ctx: CanvasRenderingContext2D, canvasW: number, canvasH: number) {
+  const text = "perlerly.com";
+  const fontSize = 14;
+  const paddingX = 12;
+  const paddingY = 6;
+  const margin = 12;
+
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  const metrics = ctx.measureText(text);
+  const pillW = metrics.width + paddingX * 2;
+  const pillH = fontSize + paddingY * 2;
+  const x = canvasW - pillW - margin;
+  const y = canvasH - pillH - margin;
+  const r = pillH / 2;
+
+  ctx.fillStyle = "rgba(0,0,0,0.45)";
+  ctx.beginPath();
+  ctx.roundRect(x, y, pillW, pillH, r);
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x + paddingX, y + pillH / 2);
+  ctx.textBaseline = "alphabetic";
+}
+
 interface ExportOptionsProps {
   grid: string[][];
   size: number;
@@ -22,7 +54,7 @@ function getBeadCounts(grid: string[][]) {
     .sort((a, b) => b.count - a.count);
 }
 
-function exportPNGWithGrid(grid: string[][], size: number) {
+function exportPNGWithGrid(grid: string[][], size: number, title: string) {
   const scale = 20;
   const canvas = document.createElement("canvas");
   canvas.width = size * scale;
@@ -54,10 +86,16 @@ function exportPNGWithGrid(grid: string[][], size: number) {
     ctx.stroke();
   }
 
-  const a = document.createElement("a");
-  a.href = canvas.toDataURL("image/png");
-  a.download = "perlerly-pattern.png";
-  a.click();
+  addWatermark(ctx, canvas.width, canvas.height);
+
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${slugify(title)}-perlerly.png`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }, "image/png");
 }
 
 function exportCSV(grid: string[][]) {
@@ -141,10 +179,16 @@ function exportPrintableGrid(grid: string[][], size: number, title: string) {
     }
   }
 
-  const a = document.createElement("a");
-  a.href = canvas.toDataURL("image/png");
-  a.download = "perlerly-printable.png";
-  a.click();
+  addWatermark(ctx, canvas.width, canvas.height);
+
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${slugify(title)}-printable-perlerly.png`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }, "image/png");
 }
 
 function exportPDFAsImage(grid: string[][], size: number, title: string) {
@@ -222,10 +266,16 @@ function exportPDFAsImage(grid: string[][], size: number, title: string) {
     ly += 22;
   }
 
-  const a = document.createElement("a");
-  a.href = canvas.toDataURL("image/png");
-  a.download = "perlerly-pattern-full.png";
-  a.click();
+  addWatermark(ctx, canvas.width, canvas.height);
+
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${slugify(title)}-full-perlerly.png`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }, "image/png");
 }
 
 export default function ExportOptions({ grid, size, title, isPaid }: ExportOptionsProps) {
@@ -234,7 +284,7 @@ export default function ExportOptions({ grid, size, title, isPaid }: ExportOptio
       <label className="text-xs font-semibold text-muted-foreground block uppercase tracking-wider">Export</label>
 
       <button
-        onClick={() => exportPNGWithGrid(grid, size)}
+        onClick={() => exportPNGWithGrid(grid, size, title)}
         className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-border font-semibold text-sm hover:bg-muted transition-colors"
       >
         <Download size={14} />
