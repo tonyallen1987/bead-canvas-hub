@@ -10,7 +10,7 @@ import Header from "@/components/Header";
 import Index from "./pages/Index";
 import Explore from "./pages/Explore";
 import Designer from "./pages/Designer";
-import Patterns from "./pages/Patterns";
+import { Navigate } from "react-router-dom";
 import Counter from "./pages/Counter";
 import Auth from "./pages/Auth";
 import PatternDetail from "./pages/PatternDetail";
@@ -43,7 +43,7 @@ function App() {
               <Route path="/" element={<Index />} />
               <Route path="/explore" element={<Explore />} />
               <Route path="/designer" element={<Designer />} />
-              <Route path="/patterns" element={<Patterns />} />
+              <Route path="/patterns" element={<Navigate to="/explore" replace />} />
               <Route path="/counter" element={<Counter />} />
               <Route path="/pattern/:slug" element={<PatternDetail />} />
               <Route path="/auth" element={<Auth />} />

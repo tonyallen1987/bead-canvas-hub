@@ -1,34 +1,27 @@
 import { Link } from "react-router-dom";
-import { Compass, PenTool, Grid3X3, Calculator, ArrowRight } from "lucide-react";
+import { Compass, PenTool, Calculator, ArrowRight } from "lucide-react";
 import BeadDecoration from "@/components/BeadDecoration";
 import PageMeta from "@/components/PageMeta";
 
 const features = [
   {
     icon: Compass,
-    title: "Explore",
-    desc: "Discover amazing Perler bead creations from the community",
+    title: "Explore Patterns",
+    desc: "Browse hundreds of free community patterns by category, difficulty, and popularity",
     to: "/explore",
     color: "bg-bead-sky",
   },
   {
     icon: PenTool,
     title: "Pattern Designer",
-    desc: "Draw your own bead patterns right in the browser",
+    desc: "Upload an image or draw pixel-by-pixel to create your own bead pattern",
     to: "/designer",
     color: "bg-bead-pink",
   },
   {
-    icon: Grid3X3,
-    title: "Pattern Library",
-    desc: "Browse and download curated patterns by category",
-    to: "/patterns",
-    color: "bg-bead-mint",
-  },
-  {
     icon: Calculator,
     title: "Bead Counter",
-    desc: "Estimate the colors and quantities you need",
+    desc: "Estimate the colors and quantities you need before you start",
     to: "/counter",
     color: "bg-bead-lemon",
   },
@@ -94,7 +87,7 @@ export default function Index() {
 
       {/* Feature cards */}
       <section className="container py-16">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map((f) => (
             <Link
               key={f.to}
