@@ -188,9 +188,9 @@ export default function Designer() {
 
   return (
     <div className="container py-8">
-      <PageMeta title="Perler Bead Pattern Designer – Perlerly" description="Upload an image and convert it into a Perler bead pattern automatically. Customize colors, grid size, and difficulty. Free online tool." />
-      <h1 className="text-3xl font-extrabold mb-2">Pattern Designer</h1>
-      <p className="text-muted-foreground mb-6">Draw your bead pattern on the grid</p>
+      <PageMeta title="Photo to Perler Bead Pattern Converter – Perlerly" description="Upload any image and instantly convert it into a pixel art Perler bead pattern. Choose grid size, match official Perler colors, and download for free." />
+      <h1 className="text-3xl font-extrabold mb-2">Photo to Perler Bead Pattern Converter</h1>
+      <p className="text-muted-foreground mb-6">Upload any image and instantly get a pixel art bead pattern — or draw your own from scratch.</p>
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Grid canvas */}
@@ -226,6 +226,9 @@ export default function Designer() {
 
         {/* Sidebar */}
         <div className="lg:w-72 space-y-4">
+          {/* Primary CTA: Import from Image */}
+          <ImportFromImage onImport={handleImageImport} primary />
+
           <GridControls size={size} beadCount={beadCount} onResize={resizeGrid} />
 
           {/* Palette */}
@@ -293,7 +296,7 @@ export default function Designer() {
             onZoomOut={() => setZoom((z) => Math.max(z - 0.25, 0.25))}
           />
 
-          <ImportFromImage onImport={handleImageImport} />
+          {/* ImportFromImage already at top of sidebar */}
 
           <ShoppingList grid={grid} onSwapColor={(hex) => setSwapHex(hex)} />
 
