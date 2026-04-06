@@ -3,6 +3,38 @@ import { PERLER_COLOR_MAP } from "@/data/perlerColors";
 
 const EMPTY = "transparent";
 
+function slugify(text: string): string {
+  return text.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-pattern";
+}
+
+function addWatermark(ctx: CanvasRenderingContext2D, canvasW: number, canvasH: number) {
+  const text = "perlerly.com";
+  const fontSize = 14;
+  const paddingX = 12;
+  const paddingY = 6;
+  const margin = 12;
+
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  const metrics = ctx.measureText(text);
+  const pillW = metrics.width + paddingX * 2;
+  const pillH = fontSize + paddingY * 2;
+  const x = canvasW - pillW - margin;
+  const y = canvasH - pillH - margin;
+  const r = pillH / 2;
+
+  ctx.fillStyle = "rgba(0,0,0,0.45)";
+  ctx.beginPath();
+  ctx.roundRect(x, y, pillW, pillH, r);
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x + paddingX, y + pillH / 2);
+  ctx.textBaseline = "alphabetic";
+}
+
 interface ExportOptionsProps {
   grid: string[][];
   size: number;
