@@ -16,9 +16,10 @@ const GRID_SIZES = [16, 24, 32, 48] as const;
 
 interface ImportFromImageProps {
   onImport: (grid: string[][], rows: number, cols: number) => void;
+  primary?: boolean;
 }
 
-export default function ImportFromImage({ onImport }: ImportFromImageProps) {
+export default function ImportFromImage({ onImport, primary }: ImportFromImageProps) {
   const [open, setOpen] = useState(false);
   const [gridSize, setGridSize] = useState<number>(16);
   const [preview, setPreview] = useState<string | null>(null);
@@ -116,11 +117,16 @@ export default function ImportFromImage({ onImport }: ImportFromImageProps) {
   return (
     <>
       <Button
-        variant="outline"
+        variant={primary ? "default" : "outline"}
         onClick={() => setOpen(true)}
-        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-border font-bold text-sm hover:bg-muted transition-colors"
+        className={cn(
+          "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-colors",
+          primary
+            ? "bg-bead-pink text-white hover:bg-bead-pink/90 border-0 shadow-md"
+            : "border-2 border-border hover:bg-muted"
+        )}
       >
-        <ImagePlus size={16} /> Import from Image
+        <ImagePlus size={16} /> {primary ? "Upload Photo → Bead Pattern" : "Import from Image"}
       </Button>
 
       <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
