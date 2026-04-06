@@ -179,10 +179,16 @@ function exportPrintableGrid(grid: string[][], size: number, title: string) {
     }
   }
 
-  const a = document.createElement("a");
-  a.href = canvas.toDataURL("image/png");
-  a.download = "perlerly-printable.png";
-  a.click();
+  addWatermark(ctx, canvas.width, canvas.height);
+
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${slugify(title)}-printable-perlerly.png`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }, "image/png");
 }
 
 function exportPDFAsImage(grid: string[][], size: number, title: string) {
@@ -260,10 +266,16 @@ function exportPDFAsImage(grid: string[][], size: number, title: string) {
     ly += 22;
   }
 
-  const a = document.createElement("a");
-  a.href = canvas.toDataURL("image/png");
-  a.download = "perlerly-pattern-full.png";
-  a.click();
+  addWatermark(ctx, canvas.width, canvas.height);
+
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${slugify(title)}-full-perlerly.png`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }, "image/png");
 }
 
 export default function ExportOptions({ grid, size, title, isPaid }: ExportOptionsProps) {
