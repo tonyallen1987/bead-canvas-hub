@@ -331,6 +331,20 @@ export default function Designer() {
         </div>
       </div>
 
+      {/* Static SEO content */}
+      <section className="container py-16 border-t mt-12">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl font-extrabold tracking-tight mb-4">How to Use the Perler Bead Pattern Designer</h2>
+          <p className="text-muted-foreground text-base leading-relaxed mb-8">
+            Create your own custom Perler bead patterns in three steps: choose your grid size (16×16 for beginners, 29×29 for a standard pegboard, 32×32 or 58×58 for larger projects), select colors from the official Perler bead palette, and draw your pattern cell by cell. Use the Import from Image feature to automatically convert any PNG photo into a pixel art bead pattern.
+          </p>
+          <h3 className="text-xl font-bold mb-2">Grid Sizes Explained</h3>
+          <p className="text-muted-foreground text-base leading-relaxed">
+            16×16 (Small): 256 beads, ideal for keychains and beginners. 29×29 (Standard): 841 beads, fits one standard Perler pegboard. 32×32 (Large): 1,024 beads. 58×58 (Double): 3,364 beads, requires four pegboards.
+          </p>
+        </div>
+      </section>
+
       <ColorSwapDialog
         open={!!swapHex}
         fromHex={swapHex}
