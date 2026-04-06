@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Explore from "./pages/Explore";
 import Designer from "./pages/Designer";
 import { Navigate } from "react-router-dom";
+import LibraryPatternDetail from "./pages/LibraryPatternDetail";
 import Counter from "./pages/Counter";
 import Auth from "./pages/Auth";
 import PatternDetail from "./pages/PatternDetail";
@@ -46,6 +47,7 @@ function App() {
               <Route path="/patterns" element={<Navigate to="/explore" replace />} />
               <Route path="/counter" element={<Counter />} />
               <Route path="/pattern/:slug" element={<PatternDetail />} />
+              <Route path="/library/:id" element={<LibraryPatternDetail />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/admin-import" element={<AdminImport />} />
               <Route path="*" element={<NotFound />} />
