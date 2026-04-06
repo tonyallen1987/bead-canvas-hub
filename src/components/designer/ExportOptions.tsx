@@ -272,7 +272,7 @@ export default function ExportOptions({ grid, size, title, isPaid }: ExportOptio
       <label className="text-xs font-semibold text-muted-foreground block uppercase tracking-wider">Export</label>
 
       <button
-        onClick={() => exportPNGWithGrid(grid, size)}
+        onClick={() => exportPNGWithGrid(grid, size, title)}
         className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-border font-semibold text-sm hover:bg-muted transition-colors"
       >
         <Download size={14} />
