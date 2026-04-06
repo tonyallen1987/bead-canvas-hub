@@ -386,7 +386,7 @@ export default function Explore() {
                 return (
                   <Link
                     key={pattern.id}
-                    to={pattern.isSeed ? "/designer" : `/pattern/${pattern.slug}`}
+                    to={pattern.isSeed ? `/library/${pattern.id}` : `/pattern/${pattern.slug}`}
                     className="break-inside-avoid mb-4 block group"
                   >
                     <div className="bg-card rounded-xl border border-border/60 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_-12px_hsl(var(--explore-active)/0.25)]">
