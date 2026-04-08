@@ -204,6 +204,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_pattern_category_counts: {
+        Args: never
+        Returns: {
+          category: string
+          cnt: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

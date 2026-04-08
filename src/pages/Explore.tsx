@@ -113,7 +113,28 @@ export default function Explore() {
   const { user } = useAuth();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { loadPatterns(true); }, []);
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+  const [totalDbCount, setTotalDbCount] = useState(0);
+
+  // Load category counts from DB once
+  useEffect(() => {
+    const loadCounts = async () => {
+      const { data } = await supabase.rpc('get_pattern_category_counts' as any);
+      if (data) {
+        const counts: Record<string, number> = {};
+        let total = 0;
+        (data as any[]).forEach((row: any) => {
+          if (row.category) counts[row.category] = Number(row.cnt);
+          total += Number(row.cnt);
+        });
+        setCategoryCounts(counts);
+        setTotalDbCount(total);
+      }
+    };
+    loadCounts();
+  }, []);
+
+  useEffect(() => { loadPatterns(true); }, [activeCategory]);
   useEffect(() => { if (user && patterns.length > 0) loadUserInteractions(); }, [user, patterns]);
 
   const loadPatterns = async (initial = false) => {
@@ -128,10 +149,16 @@ export default function Explore() {
     const from = initial ? 0 : patterns.length;
     const to = from + PAGE_SIZE - 1;
 
-    const { data } = await supabase
+    let query = supabase
       .from("perler_patterns")
       .select("id, title, slug, grid_data, grid_rows, grid_cols, created_at, category, tags, difficulty, profiles!perler_patterns_user_id_fkey(username, display_name, avatar_url)")
-      .eq("is_public", true)
+      .eq("is_public", true);
+    
+    if (activeCategory !== "All") {
+      query = query.eq("category", activeCategory);
+    }
+    
+    const { data } = await query
       .order("created_at", { ascending: false })
       .range(from, to);
 
@@ -234,46 +261,38 @@ export default function Explore() {
       };
     });
 
-    const seeds: DisplayPattern[] = seedPatterns.map((s) => {
-      const beadCount = getBeadCount(s.grid_data);
-      return {
-        id: s.id,
-        title: s.title,
-        slug: s.slug,
-        grid_data: s.grid_data,
-        grid_rows: s.grid_rows,
-        grid_cols: s.grid_cols,
-        created_at: s.created_at,
-        authorName: s.author,
-        avatarUrl: null,
-        isSeed: true,
-        difficulty: s.difficulty === "Easy"
-          ? { label: "Easy", color: "bg-explore-easy text-white" }
-          : { label: "Medium", color: "bg-explore-medium text-white" },
-        beadCount,
-        category: s.category,
-        tags: s.tags,
-      };
-    });
+    const seeds: DisplayPattern[] = seedPatterns
+      .filter((s) => activeCategory === "All" || s.category === activeCategory)
+      .map((s) => {
+        const beadCount = getBeadCount(s.grid_data);
+        return {
+          id: s.id,
+          title: s.title,
+          slug: s.slug,
+          grid_data: s.grid_data,
+          grid_rows: s.grid_rows,
+          grid_cols: s.grid_cols,
+          created_at: s.created_at,
+          authorName: s.author,
+          avatarUrl: null,
+          isSeed: true,
+          difficulty: s.difficulty === "Easy"
+            ? { label: "Easy", color: "bg-explore-easy text-white" }
+            : { label: "Medium", color: "bg-explore-medium text-white" },
+          beadCount,
+          category: s.category,
+          tags: s.tags,
+        };
+      });
 
     return [...dbItems, ...seeds];
-  }, [patterns]);
+  }, [patterns, activeCategory]);
 
-  // Category counts (before filtering)
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    allPatterns.forEach((p) => {
-      if (p.category) counts[p.category] = (counts[p.category] || 0) + 1;
-    });
-    return counts;
-  }, [allPatterns]);
+  // categoryCounts now come from DB, defined above
 
-  // Filter and sort
+  // Sort only (filtering is now server-side)
   const displayPatterns = useMemo(() => {
-    let filtered = allPatterns;
-    if (activeCategory !== "All") {
-      filtered = filtered.filter((p) => p.category === activeCategory);
-    }
+    const filtered = [...allPatterns];
 
     filtered.sort((a, b) => {
       if (sort === "popular") return (likeCounts[b.id] || 0) - (likeCounts[a.id] || 0);
@@ -282,7 +301,7 @@ export default function Explore() {
     });
 
     return filtered;
-  }, [allPatterns, activeCategory, sort, likeCounts]);
+  }, [allPatterns, sort, likeCounts]);
 
   // Insert CTA card at position 3
   const renderItems = useMemo(() => {
@@ -295,7 +314,7 @@ export default function Explore() {
     return items;
   }, [displayPatterns]);
 
-  const totalCount = activeCategory === "All" ? allPatterns.length : displayPatterns.length;
+  const totalCount = activeCategory === "All" ? totalDbCount + seedPatterns.length : (categoryCounts[activeCategory] || 0);
 
   return (
     <div className="min-h-screen grid-pattern">
@@ -336,7 +355,7 @@ export default function Explore() {
                   : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-foreground/30"
               )}
             >
-              All <span className="ml-1 opacity-70">{allPatterns.length}</span>
+              All <span className="ml-1 opacity-70">{totalDbCount + seedPatterns.length}</span>
             </button>
             {EXPLORE_CATEGORIES.map((cat) => (
               <button
