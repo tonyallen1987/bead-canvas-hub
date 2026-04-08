@@ -149,10 +149,16 @@ export default function Explore() {
     const from = initial ? 0 : patterns.length;
     const to = from + PAGE_SIZE - 1;
 
-    const { data } = await supabase
+    let query = supabase
       .from("perler_patterns")
       .select("id, title, slug, grid_data, grid_rows, grid_cols, created_at, category, tags, difficulty, profiles!perler_patterns_user_id_fkey(username, display_name, avatar_url)")
-      .eq("is_public", true)
+      .eq("is_public", true);
+    
+    if (activeCategory !== "All") {
+      query = query.eq("category", activeCategory);
+    }
+    
+    const { data } = await query
       .order("created_at", { ascending: false })
       .range(from, to);
 
