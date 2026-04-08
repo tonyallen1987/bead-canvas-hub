@@ -261,27 +261,29 @@ export default function Explore() {
       };
     });
 
-    const seeds: DisplayPattern[] = seedPatterns.map((s) => {
-      const beadCount = getBeadCount(s.grid_data);
-      return {
-        id: s.id,
-        title: s.title,
-        slug: s.slug,
-        grid_data: s.grid_data,
-        grid_rows: s.grid_rows,
-        grid_cols: s.grid_cols,
-        created_at: s.created_at,
-        authorName: s.author,
-        avatarUrl: null,
-        isSeed: true,
-        difficulty: s.difficulty === "Easy"
-          ? { label: "Easy", color: "bg-explore-easy text-white" }
-          : { label: "Medium", color: "bg-explore-medium text-white" },
-        beadCount,
-        category: s.category,
-        tags: s.tags,
-      };
-    });
+    const seeds: DisplayPattern[] = seedPatterns
+      .filter((s) => activeCategory === "All" || s.category === activeCategory)
+      .map((s) => {
+        const beadCount = getBeadCount(s.grid_data);
+        return {
+          id: s.id,
+          title: s.title,
+          slug: s.slug,
+          grid_data: s.grid_data,
+          grid_rows: s.grid_rows,
+          grid_cols: s.grid_cols,
+          created_at: s.created_at,
+          authorName: s.author,
+          avatarUrl: null,
+          isSeed: true,
+          difficulty: s.difficulty === "Easy"
+            ? { label: "Easy", color: "bg-explore-easy text-white" }
+            : { label: "Medium", color: "bg-explore-medium text-white" },
+          beadCount,
+          category: s.category,
+          tags: s.tags,
+        };
+      });
 
     return [...dbItems, ...seeds];
   }, [patterns]);
