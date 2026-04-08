@@ -286,7 +286,7 @@ export default function Explore() {
       });
 
     return [...dbItems, ...seeds];
-  }, [patterns]);
+  }, [patterns, activeCategory]);
 
   // categoryCounts now come from DB, defined above
 
