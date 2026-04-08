@@ -288,12 +288,9 @@ export default function Explore() {
 
   // categoryCounts now come from DB, defined above
 
-  // Filter and sort
+  // Sort only (filtering is now server-side)
   const displayPatterns = useMemo(() => {
-    let filtered = allPatterns;
-    if (activeCategory !== "All") {
-      filtered = filtered.filter((p) => p.category === activeCategory);
-    }
+    const filtered = [...allPatterns];
 
     filtered.sort((a, b) => {
       if (sort === "popular") return (likeCounts[b.id] || 0) - (likeCounts[a.id] || 0);
@@ -302,7 +299,7 @@ export default function Explore() {
     });
 
     return filtered;
-  }, [allPatterns, activeCategory, sort, likeCounts]);
+  }, [allPatterns, sort, likeCounts]);
 
   // Insert CTA card at position 3
   const renderItems = useMemo(() => {
@@ -315,7 +312,7 @@ export default function Explore() {
     return items;
   }, [displayPatterns]);
 
-  const totalCount = activeCategory === "All" ? allPatterns.length : displayPatterns.length;
+  const totalCount = activeCategory === "All" ? totalDbCount + seedPatterns.length : (categoryCounts[activeCategory] || 0);
 
   return (
     <div className="min-h-screen grid-pattern">
