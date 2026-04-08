@@ -113,7 +113,28 @@ export default function Explore() {
   const { user } = useAuth();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { loadPatterns(true); }, []);
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+  const [totalDbCount, setTotalDbCount] = useState(0);
+
+  // Load category counts from DB once
+  useEffect(() => {
+    const loadCounts = async () => {
+      const { data } = await supabase.rpc('get_pattern_category_counts' as any);
+      if (data) {
+        const counts: Record<string, number> = {};
+        let total = 0;
+        (data as any[]).forEach((row: any) => {
+          if (row.category) counts[row.category] = Number(row.cnt);
+          total += Number(row.cnt);
+        });
+        setCategoryCounts(counts);
+        setTotalDbCount(total);
+      }
+    };
+    loadCounts();
+  }, []);
+
+  useEffect(() => { loadPatterns(true); }, [activeCategory]);
   useEffect(() => { if (user && patterns.length > 0) loadUserInteractions(); }, [user, patterns]);
 
   const loadPatterns = async (initial = false) => {
