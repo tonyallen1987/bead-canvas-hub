@@ -355,7 +355,7 @@ export default function Explore() {
                   : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-foreground/30"
               )}
             >
-              All <span className="ml-1 opacity-70">{allPatterns.length}</span>
+              All <span className="ml-1 opacity-70">{totalDbCount + seedPatterns.length}</span>
             </button>
             {EXPLORE_CATEGORIES.map((cat) => (
               <button
