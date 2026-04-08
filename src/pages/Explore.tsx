@@ -280,14 +280,7 @@ export default function Explore() {
     return [...dbItems, ...seeds];
   }, [patterns]);
 
-  // Category counts (before filtering)
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    allPatterns.forEach((p) => {
-      if (p.category) counts[p.category] = (counts[p.category] || 0) + 1;
-    });
-    return counts;
-  }, [allPatterns]);
+  // categoryCounts now come from DB, defined above
 
   // Filter and sort
   const displayPatterns = useMemo(() => {
