@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { COLOR_GROUPS, PERLER_COLOR_MAP } from "@/data/perlerColors";
+import { COLOR_GROUPS, PERLER_COLOR_MAP, PERLER_COLORS } from "@/data/perlerColors";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const EMPTY = "transparent";
@@ -26,7 +26,7 @@ function makeGrid(size: number) {
 export default function Designer() {
   const [size, setSize] = useState(DEFAULT_SIZE);
   const [grid, setGrid] = useState<string[][]>(() => makeGrid(DEFAULT_SIZE));
-  const [color, setColor] = useState(COLOR_GROUPS[0].colors[0].hex);
+  const [color, setColor] = useState(PERLER_COLORS.find(c => c.id === "red")?.hex ?? "#BE3128");
   const [tool, setTool] = useState<ToolMode>("paint");
   const [painting, setPainting] = useState(false);
   const [title, setTitle] = useState("");
