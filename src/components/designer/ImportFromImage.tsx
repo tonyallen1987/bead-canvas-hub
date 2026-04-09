@@ -78,7 +78,7 @@ export default function ImportFromImage({ onImport, primary }: ImportFromImagePr
       </Button>
 
       <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] rounded-xl">
           <DialogHeader>
             <DialogTitle className="font-extrabold">图片转拼豆</DialogTitle>
             <DialogDescription>
