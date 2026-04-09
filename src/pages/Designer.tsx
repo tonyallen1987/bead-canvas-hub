@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { COLOR_GROUPS, PERLER_COLOR_MAP } from "@/data/perlerColors";
+import { COLOR_GROUPS, PERLER_COLOR_MAP, PERLER_COLORS } from "@/data/perlerColors";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const EMPTY = "transparent";
