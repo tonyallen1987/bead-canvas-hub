@@ -26,7 +26,7 @@ function makeGrid(size: number) {
 export default function Designer() {
   const [size, setSize] = useState(DEFAULT_SIZE);
   const [grid, setGrid] = useState<string[][]>(() => makeGrid(DEFAULT_SIZE));
-  const [color, setColor] = useState(COLOR_GROUPS[0].colors[0].hex);
+  const [color, setColor] = useState(PERLER_COLORS.find(c => c.id === "red")?.hex ?? "#BE3128");
   const [tool, setTool] = useState<ToolMode>("paint");
   const [painting, setPainting] = useState(false);
   const [title, setTitle] = useState("");
