@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useState, useRef } from "react";
 import { ImagePlus, Upload, X } from "lucide-react";
 import {
   Dialog,
